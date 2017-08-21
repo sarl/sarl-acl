@@ -1,0 +1,128 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding
+
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.ACLMessageContent
+import io.sarl.acl.message.ACLMessageEnvelope
+import io.sarl.acl.message.ACLTransportMessage
+
+/** 
+ * This class manages all the encoding/decoding repartition tasks.
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+capacity ACLEncoding {
+
+	/** 
+	 * Encodes a given ACL Message into an array of bytes 
+	 * (which is commonly called the payload).
+	 * 
+	 * @param aMsg is the ACL Message to encode
+	 * @param parameters
+	 * @return the ACLMessage encoded in an array of bytes
+	 * 
+	 */
+	def encode(aMsg : ACLMessage, parameters : Object*) : byte[]
+
+	/** 
+	 * Gets the ACL Message from an ACL Transport Message.
+	 * <ul>
+	 * <li>The ACL Transport Message corresponds to the payload</p>
+	 * <li>The payload has been previously encoded by {@link #encode(ACLMessage, Object...)} 
+	 * as defined by FIPA : [ [Envelope Length] | [Envelope] | [Content] ]</li>
+	 * </ul>
+	 * <p>
+	 * Workflow :
+	 * <ol>
+	 * <li>Get the envelope length</li>
+	 * <li>Get back the envelope in an array bytes according to the previously recovered envelope length</li>
+	 * <li>Get back the corresponding {@link ACLMessageEnvelope}</li>
+	 * <li>Get the content length according to the global length and the envelope length</li>
+	 * <li>Get back the content in an array of bytes according to the previously recovered content length</li>
+	 * <li>Get back the corresponding {@link ACLMessageContent}</li>
+	 * <li>Create a new ACL Message from the recovered envelope and content</li>
+	 * </ol>
+	 * 
+	 * @param tMsg the ACLTransportMessage containing the encoded ACLMessage (payload)
+	 * @param parameters
+	 * @return the new ACLMessage decoded and rebuilt
+	 */
+	def decode(tMsg : byte[], parameters : Object*) : ACLMessage
+
+	/** 
+	 * Gets the ACL Message from an ACL Transport Message.
+	 * <ul>
+	 * <li>The ACL Transport Message corresponds to the payload</p>
+	 * <li>The payload has been previously encoded by {@link #encode(ACLMessage, Object...)} 
+	 * as defined by FIPA : [ [Envelope Length] | [Envelope] | [Content] ]</li>
+	 * </ul>
+	 * <p>
+	 * Workflow :
+	 * <ol>
+	 * <li>Get the envelope length</li>
+	 * <li>Get back the envelope in an array bytes according to the previously recovered envelope length</li>
+	 * <li>Get back the corresponding {@link ACLMessageEnvelope}</li>
+	 * <li>Get the content length according to the global length and the envelope length</li>
+	 * <li>Get back the content in an array of bytes according to the previously recovered content length</li>
+	 * <li>Get back the corresponding {@link ACLMessageContent}</li>
+	 * <li>Create a new ACL Message from the recovered envelope and content</li>
+	 * </ol>
+	 * 
+	 * @param tMsg the ACLTransportMessage containing the encoded ACLMessage (payload)
+	 * @param parameters
+	 * @return the new ACLMessage decoded and rebuilt
+	 */
+	def decode(tMsg : ACLTransportMessage, parameters : Object*) : ACLMessage
+
+	/** 
+	 * Getter of contentEncodingService
+	 * 
+	 * @return the contentEncodingService used to encode the ACLMessageContent
+	 */
+	def getContentEncodingService : ACLMessageContentEncodingService
+
+	/** 
+	 * Setter of contentEncodingService used to encode the ACLMessageContent
+	 * 
+	 * @param contentEncodingService to be set
+	 */
+	def setContentEncodingService(contentEncodingService : ACLMessageContentEncodingService)
+
+	/** 
+	 * Getter of envelopeEncodingService
+	 * 
+	 * @return envelopeEncodingService used to encode the envelope
+	 */
+	def getEnvelopeEncodingService : ACLMessageEnvelopeEncodingService
+
+	/** 
+	 * Setter of envelopeEncodingService used to encode the envelope
+	 * 
+	 * @param envelopeEncodingService to be set
+	 */
+	def setEnvelopeEncodingService(envelopeEncodingService : ACLMessageEnvelopeEncodingService)
+
+}

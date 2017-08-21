@@ -1,0 +1,454 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.protocol
+
+import io.sarl.acl.^agent.ACL
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.Performative
+import io.sarl.core.Logging
+import io.sarl.core.Time
+import java.util.Collection
+import java.util.List
+import java.util.UUID
+import io.sarl.core.Initialize
+import io.sarl.core.Destroy
+import java.util.Objects
+import java.text.MessageFormat
+
+/** 
+ * This abstract class describes all the necessary information common to every protocols.
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+abstract behavior FipaProtocol {
+
+	uses Logging, Time, ACL
+
+	protected static final class Utils {
+
+		/** 
+		 * Timeout in milliseconds.
+		 */
+		public static val TIMEOUT = 10000
+
+		/** 
+		 * Generates a random conversation id.
+		 * 
+		 * @see UUID
+		 * 
+		 * @return a new unique UUID
+		 */
+		static def generateConversationID : UUID {
+			UUID::randomUUID
+		}
+
+		private new {
+		}
+
+	} 
+
+	/** 
+	 * Maximum number of participants in a protocol (including initiator)
+	 */
+	var maximumParticipants : int
+	
+	/**
+	 * Unique identifier used to identify the conversation and transmitted into the ACL Messages
+	 */
+	var conversationId : UUID
+	
+	/**
+	 * Friendly name for the conversation
+	 */
+	var name : String
+	
+	/**
+	 * Address of the agent that initiated the protocol
+	 */
+	var initiator : UUID
+	
+	/**
+	 * Addresses of the participants
+	 */
+	var participants = <UUID>newArrayList
+
+	/**
+	 * State of the agent for the current state
+	 */
+	var state : ProtocolState
+	
+	/**
+	 * Number of errors.
+	 */
+	var nbErrors = 0
+
+	/**
+	 * Started time is used to check if timeout is reached or not.
+	 */
+	var startedTime = 0.0
+
+	/** Replies the type of fipa protocol.
+	 */
+	abstract def getProtocolType : EnumFipaProtocol
+
+	/** 
+	 * Initializes the participants and the initiator of the current protocol.
+	 * 
+	 * @param initiator
+	 * @param participants
+	 */
+	protected def initiate(initiator : UUID, participants : UUID*) {
+		this.initiator = initiator;
+		if (participants.length > maximumParticipants - 1) {
+			error(Messages::AbstractFipaProtocol_0 + (maximumParticipants-1));
+		}
+		for (participant : participants) {
+			if (participant != initiator) {
+				this.participants += participant
+			} else {
+				warning(Messages::AbstractFipaProtocol_1);
+			}
+		}
+		this.conversationId = Utils::generateConversationID
+	}
+	
+	/**
+	 * Initializes the participants and the initiator of the current protocol.
+	 * 
+	 * @param initiator
+	 * @param participants
+	 */
+	protected def initiate(initiator : UUID, participants : List<UUID>) {
+		this.initiator = initiator
+		if (participants.size() > maximumParticipants-1) {
+			error(Messages::AbstractFipaProtocol_2 + (maximumParticipants-1));
+		}
+		for (participant : participants) {
+			if (participant != initiator) {
+				this.participants += participant
+			} else {
+				warning(Messages::AbstractFipaProtocol_3);
+			}
+		}
+		this.conversationId = Utils::generateConversationID
+	}
+	
+	/**
+	 * Initializes the protocol as a participant.
+	 */
+	protected def initiateAsParticipant {
+		this.participants.clear
+		this.participants += this.owner.ID
+	}
+
+	/**
+	 * Gets the agent address of the initiator of the protocol.
+	 * 
+	 * @return the agent address of the initiator
+	 */
+	protected final def getInitiator : UUID {
+		this.initiator
+	}
+
+	/**
+	 * Sets the agent address of the initiator of the protocol.
+	 * 
+	 * @param initiator
+	 */
+	protected final def setInitiator(initiator : UUID) {
+		this.initiator = initiator
+	}
+
+	/**
+	 * Tests if the currently referenced agent is the initiator of the protocol.
+	 * 
+	 * @return <code>true</code> if the referenced agent is the initiator or <code>false</code> otherwise.
+	 */
+	final def isInitiator : boolean {
+		getOwner == this.initiator
+	}
+	
+	/**
+	 * Gets the current conversation id.
+	 * 
+	 * @see UUID
+	 * 
+	 * @return the current conversation id
+	 */
+	def getConversationID : UUID {
+		this.conversationId
+	}
+
+	/**
+	 * Sets the current conversation id to a given {@link UUID}.
+	 * 
+	 * @param conversationId
+	 */
+	protected def setConversationID(conversationId : UUID) {
+		this.conversationId = conversationId
+	}
+	
+	/**
+	 * Tests if the currently referenced agent is a simple participant of the protocol.
+	 * 
+	 * @return <code>true</code> if the referenced agent is a participant or <code>false</code> otherwise.
+	 */
+	final def isParticipant : boolean {
+		for (participant : this.participants) {
+			if (participant == this.owner) 
+				return true
+		}
+		return false
+	}
+
+	/**
+	 * Gets the maximum number of participants.
+	 * @return the maximum number of participants.
+	 */
+	def getMaximumParticipants : int {
+		this.maximumParticipants
+	}
+
+	/**
+	 * Sets the maximum number of participants.
+	 * @param maximumParticipants
+	 */
+	protected def setMaximumParticipants(maximumParticipants : int) {
+		this.maximumParticipants = maximumParticipants
+	}
+
+	/**
+	 * Gets the list of participants involved in the conversation.
+	 * 
+	 * @return the list of participants
+	 */
+	def getParticipants : Collection<UUID> {
+		this.participants
+	}
+
+	/**
+	 * Sets the participants involved in the conversation.
+	 * 
+	 * @param participants is a list of agent addresses
+	 */
+	protected def setParticipants(participants : Collection<UUID>) {
+		this.participants = participants
+	}
+	
+	/**
+	 * Gets the friendly name of the current conversation.
+	 * @return  the friendly name of the current conversation.
+	 */
+	def getName : String {
+		this.name
+	}
+
+	/**
+	 * Sets the friendly name of the current conversation.
+	 * @param name - the friendly name of the current conversation.
+	 */
+	def setName(name : String) {
+		this.name = name
+	}
+	
+	/**
+	 * Gets the current state.
+	 * @return the current state of the protocol
+	 * @see ProtocolState
+	 */
+	def getState : ProtocolState {
+		this.state
+	}
+
+	/**
+	 * Sets the current state.
+	 * @param state
+	 */
+	protected def setState(state : ProtocolState) {
+		this.state = state
+	}
+
+	// ----------------------------
+	// Exceptions to Protocol Flow
+	// ----------------------------
+
+	protected abstract def getCancelledState : ProtocolState
+
+	protected abstract def getErrorState : ProtocolState
+
+	/** 
+	 * At any point in the IP, the initiator of the IP may cancel the interaction protocol.
+	 * 
+	 * The semantics of cancel should roughly be interpreted 
+	 * as meaning that the initiator is no longer interested in continuing the interaction 
+	 * and that it should be terminated in a manner acceptable to both the Initiator and the Participant. 
+	 * 
+	 * The Participant could either inform the Initiator that the interaction 
+	 * is done using for example an inform-done or indicates the failure of the cancellation using a failure.
+	 * 
+	 * @param content
+	 */
+	def cancel(content : Object = null) {
+		if (isInitiator && state.started && !state.finished) {
+			sendMessage(content, Performative::CANCEL, getParticipants)
+			state = getCancelledState
+		} else if (isParticipant) {
+			addError(Messages::AbstractFipaProtocol_4)
+		} else {
+			addError(Messages::AbstractFipaProtocol_5)
+		}
+	}
+
+	/**
+	 * At any point in the IP, the receiver of a communication 
+	 * can inform the sender that it did not understand what was communicated.
+	 * 
+	 * The communication of a not-understood within an interaction protocol may terminate the entire IP 
+	 * and termination of the interaction may imply that any commitments made during the interaction 
+	 * are null and void.
+	 * 
+	 * @param content
+	 */
+	def notUnderstood(content : Object = null) {
+		if (isParticipant && state.started && !state.finished) {
+			sendMessage(content, Performative::NOT_UNDERSTOOD, getInitiator)
+			addError(MessageFormat::format(Messages::AbstractFipaProtocol_8, Objects::toString(content))
+		} else if (isInitiator) {
+			addError(Messages::AbstractFipaProtocol_6)
+		} else {
+			addError(Messages::AbstractFipaProtocol_7)
+		}
+	}
+
+	/**
+	 * Generates an error and terminates the conversation.
+	 * @param msg 
+	 */
+	protected def addError(msg : String) {
+		state = getErrorState
+		this.nbErrors++
+		
+		// Display error :
+		var str = new StringBuilder
+		
+		str.append("[agent:"); //$NON-NLS-1$
+		str.append(getOwner);
+		str.append("] "); //$NON-NLS-1$
+		str.append(msg);
+		
+		str.toString().error
+	}
+	
+	/**
+	 * Tests if there is at least one error.
+	 * @return true if there is at least one error in the protocol execution, false otherwise
+	 */
+	def hasFailed : boolean {
+		this.nbErrors > 0
+	}
+	
+	/**
+	 * Gets started time.
+	 * @return the time at which the protocol was started
+	 */
+	def getStartedTime : double {
+		this.startedTime
+	}
+	
+	/**
+	 * Sets started time.
+	 */
+	protected def setStartedTime(timeValue : double = -1) {
+		if (timeValue < 0) {
+			this.startedTime = time
+		} else {
+			this.startedTime = timeValue
+			
+		}
+	}
+
+	/**
+	 * Resets started time.
+	 */
+	protected def resetStartedTime {
+		this.startedTime = 0
+	}
+	
+	/**
+	 * Tests if timeout has been reached.
+	 * <p>
+	 * If this method is called whereas {@link #getStartedTime} hasn't been set, 
+	 * {@link #getStartedTime} will be automatically set to the current time.
+	 * </p>
+	 * @return true the timeout has ellapsed, false otherwise
+	 */
+	def hasReachedTimeout : boolean {
+		if( getStartedTime === 0 ){
+			setStartedTime
+		}
+		if (time > ( getStartedTime + Utils::TIMEOUT )) {
+			resetStartedTime
+			return true
+		}
+		return false
+	}
+
+	/** Send a message.
+	 *
+	 * @param content
+	 * @param performative
+	 * @param to
+	 */
+	protected final def sendMessage(content : Object, performative : Performative, to : UUID*) {
+		var message = new ACLMessage(performative, content)
+		message.protocol = protocolType
+		message.conversationID = conversationID
+		sendACLMessage(message, to)
+	}
+
+	protected def initialize {		
+	}
+
+	protected def destroy {
+	}
+
+	
+	on Initialize {
+		initialize
+	}
+
+	on Destroy {
+		destroy
+	}
+
+	protected def isHandable(^event : ACLMessage) : boolean {
+		^event.protocol == this.protocolType && ^event.conversationID == this.conversationID
+	}
+
+	protected def hasInitial(^event : ACLMessage, performative : Performative) : boolean {
+		this.conversationID === null && ^event.protocol == this.protocolType && ^event.performative == performative
+	}
+
+}

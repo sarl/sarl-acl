@@ -1,0 +1,139 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.protocol
+
+import io.sarl.acl.message.ACLMessage
+import java.util.UUID
+import io.sarl.acl.message.Performative
+import java.util.Collection
+import io.sarl.core.Logging
+import java.text.MessageFormat
+
+/** 
+ * Conversation Manager for FIPA protocols.
+ * <p>
+ * This class lets the agent manage its conversations using protocols.
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+skill FipaConversationManager implements ConversationManager {
+
+	uses Logging
+
+	var conversations = <FipaProtocol>newArrayList 
+	
+	def createConversation(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol {
+		var protocol : FipaProtocol
+		switch (protocolType) {
+			case FIPA_REQUEST: {
+				protocol = new FipaRequestProtocol(this.owner)
+				protocol.state = RequestProtocolState::NOT_STARTED
+			}
+			case FIPA_CONTRACT_NET: {
+				protocol = new FipaContractNetProtocol(this.owner)
+				protocol.state = ContractNetProtocolState::NOT_STARTED
+			}
+			case FIPA_PROPOSE: {
+				protocol = new FipaProposeProtocol(this.owner)
+				protocol.state = ProposeProtocolState::NOT_STARTED
+			}
+			case FIPA_QUERY: {
+				protocol = new FipaQueryProtocol(this.owner)
+				protocol.state = QueryProtocolState::NOT_STARTED
+			}
+			default: {
+				error(MessageFormat::format(Messages::FipaConversationManager_0, protocolType.fipaName))
+				return null
+			}
+		}	
+		if (!name.isNullOrEmpty) {
+			protocol.name = name
+		}
+		this.conversations += protocol
+		return protocol
+	}
+	
+	/**
+	 * Creates a conversation 
+	 * @param message
+	 * 
+	 * @return the protocol created
+	 */
+	def createConversationFromMessage(message : ACLMessage) : FipaProtocol {
+		if (EnumFipaProtocol::FIPA_REQUEST == message.protocol
+			&& Performative::REQUEST == message.performative) {
+			return new FipaRequestProtocol(this.owner)
+		}
+		return null
+	}
+
+	/** 
+	 * Gets a protocol with the specified conversation id
+	 * @param conversationId
+	 * 
+	 * @return the protocol with the specified conversationId
+	 */
+	def getConversation(conversationId : UUID) : FipaProtocol {
+		for (protocol : this.conversations) {
+			if (protocol.conversationID == conversationId) {
+				return protocol
+			}
+		}
+		return null
+	}
+	
+	/**
+	 * Delete current protocols in the given state
+	 * 
+	 * @param state
+	 */
+	def removeConversations(state : ProtocolState) {
+		var iter = this.conversations.iterator
+		while (iter.hasNext) {
+			var conv = iter.next
+			if (conv.state == state) {
+				iter.remove
+			}
+		}
+	}
+
+	/**
+	 * Gets the list of current conversations.
+	 * @return the list of current conversations.
+	 */
+	def getConversations : Collection<FipaProtocol> {
+		this.conversations.unmodifiableView
+	}
+
+	/**
+	 * Sets the list of current conversations.
+	 * @param protocols - the list of current conversations.
+	 */
+	def setConversations(protocols : Collection<? extends FipaProtocol>) {
+		this.conversations = protocols
+	}
+	
+	
+}

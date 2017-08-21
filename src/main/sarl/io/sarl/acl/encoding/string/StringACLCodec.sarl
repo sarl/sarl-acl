@@ -1,0 +1,225 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.string
+
+import io.sarl.acl.encoding.AbstractACLMessageContentEncodingService
+import io.sarl.acl.encoding.PayloadEncoding
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.ACLMessageContent
+import java.lang.reflect.Array
+import java.util.StringTokenizer
+import java.util.UUID
+
+/** 
+ * This class encodes an ACLMessageContent in String or decodes
+ * an ACLMessageContent encoded in bytes to String
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+class StringACLCodec extends AbstractACLMessageContentEncodingService {
+
+	def encode(aMsg : ACLMessage) : byte[] {
+		try {
+			aMsg.toString.getBytes(aMsg.encoding)
+		} catch (e : Exception) {
+			Array::newInstance(typeof(byte), 0) as byte[]
+		}
+	}
+
+	def decode(byteMsg : byte[], parameters : Object*) : ACLMessageContent {
+		var content = this.messageContentFactory.newContent
+		
+		// Get charset parameter
+		var charset = PayloadEncoding::UTF8.value
+		for (parameter : parameters) {
+			if (parameter instanceof PayloadEncoding) {
+				charset = parameter.value
+			}
+		}
+		
+		// Try decoding with provided charset
+		try {
+			var message = new String(byteMsg, charset)
+			var st = new StringTokenizer(message, "\n", false);
+
+			// Loop through string tokenizer...
+			while (st.hasMoreTokens) {	
+				var str = st.nextToken
+			
+				// PERFORMATIVE
+				if (StringACLCodecHelper::isPerformative(str)) {
+					content.performative = StringACLCodecHelper::getPerformative(str)				
+				}
+				// SENDER
+				else if (StringACLCodecHelper::isSender(str)) {
+					content.sender = UUID::fromString(StringACLCodecHelper::getSender(str))
+				}
+				// RECEIVERS
+				else if (StringACLCodecHelper::isReceiver(str)) {
+					var receivers = <UUID>newArrayList
+					for (agentId : StringACLCodecHelper::getReceiversList(str)) {
+						receivers += UUID::fromString(agentId)
+					}
+					content.receivers = receivers
+				}
+				// CONTENT
+				else if (StringACLCodecHelper::isContent(str)) {
+					content.content = new StringBuffer(StringACLCodecHelper::getContent(str))
+				}
+				// ENCODING
+				else if (StringACLCodecHelper::isEncoding(str)) {
+					content.encoding = StringACLCodecHelper::getEncoding(str)
+				}
+				// LANGUAGE
+				else if (StringACLCodecHelper::isLanguage(str)) {
+					content.language = StringACLCodecHelper::getLanguage(str)
+				}
+				// ONTOLOGY
+				else if( StringACLCodecHelper::isOntology(str)) {
+					content.ontology = StringACLCodecHelper::getOntology(str)
+				}
+				// PROTOCOL
+				else if (StringACLCodecHelper::isProtocol(str)) {
+					content.protocol = StringACLCodecHelper::getProtocol(str)
+				}
+				// CONVERSATION ID
+				else if (StringACLCodecHelper::isConversationId(str)) {
+					var uuid = StringACLCodecHelper::getConversationId(str)
+					if( StringACLCodecHelper::isUUID(uuid)) {
+						content.conversationID = UUID::fromString(uuid)
+					} else {
+						content.conversationID = null
+					}
+				}
+			}
+			return content
+		} catch (e : Exception) {
+			return null
+		} 
+	}
+	
+	/**
+	 * Adapted from JADE.
+	 * <p>
+     * If a user-defined parameter contain a blank char inside, then it is skipped for FIPA-compatibility.
+	 * @param msg 
+     * 
+     * @return a String encoded message
+     * @see ACLMessage#toString()
+     */
+    static def toString(msg : ACLMessage) : String {
+      var str = new StringBuilder("(")
+      
+      // Display PERFORMATIVE
+      str.append(msg.performative.ordinal);
+      str.append("\n"); //$NON-NLS-1$
+      
+      // Display SENDER
+      var sender = msg.sender
+      if (sender !== null){ 
+    	  str.append(Messages::SENDER)
+    	  str.append(" ")
+    	  str.append(sender.toIdString)
+    	  str.append("\n")
+      }
+      
+      // Display RECEIVERS
+      var receivers = msg.receivers    
+      
+      if (receivers !== null) {
+		var isFirst = true
+      	for (receiver : receivers) {
+    	  	if (isFirst) { 
+    			str.append(Messages::RECEIVER)
+    		}
+    		str.append(" ( set ")
+    	  	str.append(receiver.toIdString)
+    	  	str.append(" ")
+      	}
+      	str.append(")\n")
+      }
+
+      // Display CONTENT
+	  var content = msg.content.content.toString
+	  str.append(Messages::CONTENT)
+	  str.append(" \"")
+	  if (content !== null && content.length > 0){
+		  str.append(content.trim)
+	  }
+	  str.append("\" \n")
+	  
+	  // Display ENCODING
+	  str.append(Messages::ENCODING)
+	  str.append(" ")
+	  str.append(msg.encoding)
+	  str.append("\n")
+	  
+	  // Display LANGUAGE
+	  str.append(Messages::LANGUAGE)
+	  str.append(" ")
+	  str.append(msg.language)
+	  str.append("\n")
+	  
+	  // Display ONTOLOGY
+	  str.append(Messages::ONTOLOGY)
+	  str.append(" ")
+	  str.append(msg.ontology)
+	  str.append("\n")
+
+	  // Display PROTOCOL
+	  str.append(Messages::PROTOCOL)
+	  str.append(" ")
+	  str.append(msg.protocol.fipaName)
+	  str.append("\n")
+	  
+	  // Display CONVERSATION ID
+	  str.append(Messages::CONVERSATIONID)
+	  str.append(" ")
+	  str.append(msg.conversationID)
+	  str.append("\n")
+	  
+      str.append(")")
+
+      return str.toString
+    }
+    
+    /**
+     * This methods converts to String an agentAddress
+     * 
+     * @param agentAddress to be converted
+     * @return agentAdress converted to String
+     */
+    private static def toIdString(agentAddress: UUID) : String {
+    	var identifier = new StringBuilder
+		identifier.append("( agent-identifier")
+		identifier.append(" ")
+		identifier.append(Messages::NAME)
+		identifier.append(" ")
+		identifier.append(agentAddress)
+		identifier.append(" )")
+		return identifier.toString
+    }
+  
+}

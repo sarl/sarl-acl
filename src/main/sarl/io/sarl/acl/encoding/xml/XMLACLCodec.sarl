@@ -1,0 +1,214 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.xml
+
+import io.sarl.acl.encoding.AbstractACLMessageContentEncodingService
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.ACLMessageContent
+import java.lang.reflect.Array
+
+import static extension io.sarl.acl.encoding.xml.XMLACLCodecHelper.*
+
+/** 
+ * This class encodes an ACLMessageContent in XML or decodes an ACLMessageContent encoded in bytes from XML
+ * 
+ * @see <a href="http://www.fipa.org/specs/fipa00071/SC00071E.html">FIPA ACL Message Representation in XML Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+class XMLACLCodec extends AbstractACLMessageContentEncodingService {
+
+	def encode(aMsg : ACLMessage) : byte[] {
+		try {
+			return aMsg.toXML.getBytes(aMsg.encoding)
+		} catch (e : Exception) {
+			return Array.newInstance(typeof(byte), 0) as byte[]
+		}
+	}
+
+	def decode(byteMsg : byte[], parameters : Object*) : ACLMessageContent {
+		var content = this.messageContentFactory.newContent
+		
+		// get back a JDOM document from the encoded bytes
+		var doc = getXMLDocument(byteMsg, parameters)
+		
+		// <fipa-message act="..">
+		var root = getChild(doc)
+		
+		// the act attribute of the root contains the performative
+		content.performative = decodePerformative(root)
+		
+		// handle collections of agents (receiver, reply-to)
+		content.receivers = decodeAgents(root.getChildren(XMLACLCodecXMLElement::RECEIVER.tag))
+		content.replyTo = decodeAgents(root.getChildren(XMLACLCodecXMLElement::REPLY_TO.tag))
+		
+		// handle other (easier) param/tags
+		for (childObj : root.childNodes.toElements) {
+			if (childObj.nodeName == XMLACLCodecXMLElement::SENDER.tag) {	
+				
+				content.sender = childObj.decodeAgent
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::CONTENT.tag) {
+				
+				content.content = childObj.decodeContent
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::LANGUAGE.tag) {
+				
+				content.language = childObj.decodeStringMsgParam
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::ENCODING.tag) {
+				
+				content.encoding = childObj.decodeStringMsgParam
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::ONTOLOGY.tag) {
+				
+				content.ontology = childObj.decodeStringMsgParam
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::PROTOCOL.tag) {
+				
+				content.protocol = childObj.decodeStringMsgParam
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::CONVERSATION_ID.tag) {
+				
+				content.conversationID = childObj.decodeConversationId
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::REPLY_WITH.tag) {
+				
+				content.replyWith = childObj.decodeStringMsgParam
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::IN_REPLY_TO.tag) {
+				
+				content.inReplyTo = childObj.decodeStringMsgParam
+				
+			} else if (childObj.nodeName == XMLACLCodecXMLElement::REPLY_BY.tag) {
+				
+				content.replyBy = childObj.decodeReplyByDate
+				
+			} 
+		}
+		
+		return content
+	}
+	
+	/**
+	 * Compute the XML representation of an ACLMessage
+	 * 
+	 * @param msg the ACLMessage to builds in xml format
+	 * @return the xml representation of the given ACLMessage
+	 * 
+	 * @see ACLMessage#toXML()
+	 */
+    static def toXML(msg : ACLMessage) : String {
+        var sb = new StringBuilder
+		
+        /**
+         * builds the main tag
+         * ex: <fipa-message act="inform">
+         */
+        sb.encodeFipaMessageStart(msg.performative)
+		
+        /**
+         * builds the sender tag
+         * ex: <sender><agent-identifier><name id=".."/></agent-identifier></sender>
+         */
+		sb.encodeAgent(XMLACLCodecXMLElement::SENDER.tag, msg.content.sender)
+		
+		 /**
+         * builds the receiver tag(s)
+         * ex: <receiver><agent-identifier><name id=".."/></agent-identifier></receiver>
+         */
+		sb.encodeAgents(XMLACLCodecXMLElement.RECEIVER.tag, msg.content.receivers)
+		
+		/**
+         * builds the reply-to tag(s)
+         * ex: <reply-to><agent-identifier><name id=".."/></agent-identifier></reply-to>
+		 */
+		sb.encodeAgents(XMLACLCodecXMLElement.REPLY_TO.tag, msg.content.replyTo)
+
+		/**
+		 * builds the content tag
+		 * ex: <content>this is my content</content>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.CONTENT.tag, msg.content.content.toString)
+		
+		/**
+		 * builds the language tag
+		 * ex: <language>French</language>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.LANGUAGE.tag, msg.content.language)
+		
+		/**
+		 * builds the encoding tag
+		 * ex: <encoding>UTF-8</encoding>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.ENCODING.tag, msg.content.encoding)
+		
+		/**
+		 * builds the ontology tag
+		 * ex: <ontology>UsefullOntology.owl</ontology>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.ONTOLOGY.tag, msg.content.ontology)
+		
+		/**
+		 * builds the protocol tag
+		 * ex: <protocol>fipa-query</protocol>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.PROTOCOL.tag, msg.content.protocol)
+		
+		/**
+		 * builds the conversation-id tag
+		 * ex: <conversation-id>my-unique-id</conversation-id>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.CONVERSATION_ID.tag,
+			msg.content.conversationID.ifNotNull.toString)		
+		
+		/**
+		 * builds the reply-with tag
+		 * ex: <reply-with>..</reply-with>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.REPLY_WITH.tag, msg.content.replyWith)
+		
+		/**
+		 * builds the in-reply-to tag
+		 * ex: <in-reply-to>..</in-relpy-to>
+		 */
+		sb.encodeBasicElement(XMLACLCodecXMLElement.IN_REPLY_TO.tag, msg.content.inReplyTo)	
+		
+		/**
+		 * builds the reply-by tag
+		 * ex: <reply-by time=".."s/>
+		 */
+		sb.encodeReplyByDate(XMLACLCodecXMLElement.REPLY_BY.tag, msg.content.replyBy)
+
+		/**
+		 * close the main tag
+		 * ex: <fipa-message> 
+		 */
+		sb.encodeFipaMessageEnd
+    		
+		return sb.toString
+	}
+
+}

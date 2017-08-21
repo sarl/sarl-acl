@@ -1,0 +1,118 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.bitefficient
+
+import io.sarl.acl.encoding.ACLDateUtil
+import io.sarl.acl.encoding.bitefficient.constant.BinDateTimeToken
+import io.sarl.acl.encoding.bitefficient.constant.NumberToken
+import java.util.List
+
+/** 
+ * This class encodes provides methods to transform an String ISO8601 date to bytes and decode it.
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+final class BinDate {
+
+	private new {
+	}
+
+	/** 
+	 * Encode an ISO8601 date
+	 * 
+	 * @param s String representing an ISO8601 date
+	 * @return the encoded date for bit efficient
+	 */
+	static def toBin(s : String) : List<Byte> {
+        var encodedDate = <Byte>newArrayList
+        var startPos = 0
+        
+        // should never happen for now because dates stored in a ACLMessage are absolute date
+        if (s.charAt(0) == '+' || s.charAt(0) == '-') {
+        	startPos = 1
+        }
+        
+        // YY YY MM DD
+        for (var i = startPos; i < 8 + startPos ; i += 2) {
+        	var b = (NumberToken.getCode(s.charAt(i)) << 4)
+        	b = b.bitwiseOr(NumberToken::getCode(s.charAt(i + 1)).bitwiseAnd(0x0f))
+        	encodedDate += (b as byte)
+        }
+
+        // HH MM SS SS
+        for (var i = 9 + startPos ; i < 17 + startPos ; i += 2) {
+            var b = (NumberToken.getCode(s.charAt(i)) << 4)
+            b = b.bitwiseOr(NumberToken.getCode(s.charAt(i+1)).bitwiseAnd(0x0f))
+            encodedDate += (b as byte)
+        }
+        
+        // S0
+        var b = (NumberToken.getCode(s.charAt(17+startPos)) << 4)
+        encodedDate += (b as byte)
+        
+        return encodedDate
+    }
+	
+	/**
+	 * decode an encoded ISO8601 date
+	 * 
+	 * @param bytesRead an ISO8601 encoded date
+	 * @return the corresponding String
+	 */
+	static def toString(bytesRead : List<Byte>) : String {
+		var s = new StringBuilder
+		for (i : 0..<9) {
+			if (s.length() === 8) {	
+				s.append('T')
+			}
+			s.append(NumberToken::getToken(((bytesRead.get(i)>>4).bitwiseAnd(0x0f)) as byte))
+			s.append(NumberToken::getToken((bytesRead.get(i).bitwiseAnd(0x0f)) as byte))
+        }
+		return s.toString
+	}
+	
+	/**
+	 * Determine the date time type (asbolute or relative time, with or without type designator, ..)
+	 * 
+	 * @param dateTimeToken String representing an ISO8601 date
+	 * @return the date time token (byte)
+	 */
+	static def getDateTimeType(dateTimeToken : String) : byte {
+		var tmp = 0
+        
+        if (dateTimeToken.charAt(0) == '+') {
+        	tmp = 1
+        } else if (dateTimeToken.charAt(0) == '-') {
+        	tmp = 2
+        }
+        
+        if (ACLDateUtil::containsTypeDesignator(dateTimeToken)) {
+        	tmp += 4
+        }
+
+        return (BinDateTimeToken::ABS_TIME.code + tmp) as byte
+	}
+
+}

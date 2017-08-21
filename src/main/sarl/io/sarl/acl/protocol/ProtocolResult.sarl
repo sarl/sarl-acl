@@ -1,0 +1,106 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.protocol
+
+import io.sarl.acl.message.Performative
+import java.util.UUID
+
+/** 
+ * This class is used to simplify ACL Messages when working with protocols.
+ * <p>
+ * For example, if you're calling getRequest() from {@link FipaRequestProtocol} 
+ * you won't get back the whole corresponding ACL Message but only a summarize of it : 
+ * the performative and the content.
+ * </p>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+class ProtocolResult {
+
+	var performative : Performative
+	var content : Object
+	var author : UUID
+	
+	/**
+	 * Creates a new ProtocoleResult.
+	 * @param author 
+	 * @param performative
+	 * @param content
+	 */
+	new (author : UUID = null, performative : Performative = null, content : Object = null) {
+		this.author = author;
+		this.performative = performative;
+		this.content = content;
+	}
+
+	/** 
+	 * Gets the performative.
+	 * @return the performative associated to an ACL message
+	 */
+	def getPerformative : Performative {
+		this.performative
+	}
+
+	/** 
+	 * Sets the performative.
+	 * 
+	 * @param performative
+	 */
+	def setPerformative(performative : Performative) {
+		this.performative = performative
+	}
+
+	/** 
+	 * Gets the content.
+	 * @return the content of an ACL message
+	 */
+	def getContent : Object {
+		this.content
+	}
+
+	/** 
+	 * Sets the content.
+	 * 
+	 * @param content
+	 */
+	def setContent(content : Object) {
+		this.content = content
+	}
+
+	/** 
+	 * @return the author
+	 */
+	def getAuthor : UUID {
+		this.author
+	}
+
+	/** 
+	 * @param author the author to set
+	 */
+	def setAuthor(author : UUID) {
+		this.author = author
+	}
+
+}

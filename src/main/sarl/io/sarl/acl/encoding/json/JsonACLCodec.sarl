@@ -1,0 +1,197 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.json
+
+import com.google.gson.Gson
+import io.sarl.acl.encoding.AbstractACLMessageContentEncodingService
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.ACLMessageContent
+import io.sarl.acl.message.Performative
+import java.io.ByteArrayInputStream
+import java.io.InputStreamReader
+import java.util.List
+import java.util.Map
+import java.util.UUID
+
+/** 
+ * This class encodes an ACLMessageContent in JSON or decodes an
+ * ACLMessageContent encoded in bytes to JSON
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+class JSONACLCodec extends AbstractACLMessageContentEncodingService {
+
+	def encode(aMsg : ACLMessage) : byte[] {
+		var output = <String, Object>newHashMap
+
+		// Performative
+		output.put(Messages::PERFORMATIVE, aMsg.performative.ordinal)
+
+		// Display SENDER
+		var sender = aMsg.sender
+		if (sender !== null) {
+			var sender_infos = <String, String>newHashMap
+			//sender_infos.put(Messages::NAME, sender.fipaName)
+			sender_infos.put(Messages::ID, sender.toString)
+			output.put(Messages::SENDER, sender_infos)
+		}
+
+		// Display RECEIVERS
+		var receivers = aMsg.receivers
+		var receivers_infos = <Map<String, String>>newArrayList
+
+		if (receivers !== null) {
+			for (receiver : receivers) {
+				var receiver_info = <String, String>newHashMap
+				//receiver_info.put(Messages::NAME, receiver.fipaName)
+				receiver_info.put(Messages::ID, receiver.toString)
+				receivers_infos += receiver_info
+			}
+			output.put(Messages::RECEIVERS, receivers_infos)
+		}
+
+		// Display CONTENT
+		var content = aMsg.content.content.toString
+		if (content !== null && content.length > 0) {
+			output.put(Messages::CONTENT, content.trim)
+		}
+
+		// Display ENCODING
+		output.put(Messages::ENCODING, aMsg.encoding)
+
+		// Display LANGUAGE
+		output.put(Messages::LANGUAGE, aMsg.language)
+
+		// Display ONTOLOGY
+		output.put(Messages::ONTOLOGY, aMsg.ontology)
+
+		// Display PROTOCOL
+		output.put(Messages::PROTOCOL, aMsg.protocol.fipaName)
+
+		// Display CONVERSATION ID
+		var conversationId = aMsg.conversationID
+		if (conversationId !== null) {
+			output.put(Messages::CONVERSATIONID, aMsg.conversationID.toString)
+		}
+
+		return output.fromMap
+	}
+
+	def decode(byteMsg : byte[], parameters : Object*) : ACLMessageContent {
+		var content = this.messageContentFactory.newContent
+
+		var json = byteMsg.fromBytes
+
+		// PERFORMATIVE
+		content.performative = Performative::valueOfByOrdinal(json.get(Messages::PERFORMATIVE) as Integer)
+
+		// SENDER
+		if (json.containsKey(Messages::SENDER)) {
+			var sender_id = (json.get(Messages::SENDER) as Map<String, Object>).get(Messages::ID) as String
+			content.sender = UUID::fromString(sender_id)
+		}
+
+		// RECEIVERS
+		if (json.containsKey(Messages::RECEIVERS)) {
+			var json_receivers = json.get(Messages::RECEIVERS) as List<Map<String, Object>>
+			var receivers = <UUID>newArrayList
+			for (json_receiver : json_receivers) {
+				var receiver_info = json_receiver.get(Messages::ID) as String
+				receivers += UUID::fromString(receiver_info)
+			}
+			content.receivers = receivers
+		}
+
+		// CONTENT
+		if (json.containsKey(Messages::CONTENT)) {
+			content.content = new StringBuilder(json.get(Messages::CONTENT) as String)
+		}
+
+		// ENCODING
+		content.encoding = json.get(Messages::ENCODING) as String
+
+		// LANGUAGE
+		if (json.containsKey(Messages::LANGUAGE)) {
+			content.language = json.get(Messages::LANGUAGE) as String
+		}
+
+		// ONTOLOGY
+		if (json.containsKey(Messages::ONTOLOGY)) {
+			content.ontology = json.get(Messages::ONTOLOGY) as String
+		}
+
+		// PROTOCOL
+		content.protocol = json.get(Messages::PROTOCOL) as String
+
+		// CONVERSATION ID
+		if (json.containsKey(Messages::CONVERSATIONID)
+				&& json.get(Messages::CONVERSATIONID) !== null) {
+			try {
+				var uuid = json.get(Messages::CONVERSATIONID) as String
+				content.conversationID = UUID::fromString(uuid)
+			} catch (e : Exception) {
+				content.conversationID = null
+			}
+		}
+
+		return content
+	}
+
+	/**
+	 * Return JSON ObjectMapper, used to convert Map to JSON String
+	 * @return a new object mapper
+	 */
+	protected def getMapper : Gson {
+		new Gson
+	}
+
+	/**
+	 * Convert a Map to byte[] using getMapper
+	 */
+	private def fromMap(m : Map<String, Object>) : byte[] {
+		var mapper = getMapper
+		var baos = new StringBuilder
+		try {
+			mapper.toJson(m, typeof(Map), baos)
+		} catch (e : Exception) {
+		}
+		return baos.toString.bytes
+	}
+
+	/**
+	 * Convert a byte[] to Map using getMapper
+	 */
+	private def fromBytes(byteMsg : byte[]) : Map<String, Object> {
+		var mapper = getMapper
+		var stream = new InputStreamReader(new ByteArrayInputStream(byteMsg))
+		try {
+			return mapper.fromJson(stream, typeof(Map))
+		} catch (e : Exception) {
+		} finally {
+			stream.close
+		}
+		return null
+	}
+}

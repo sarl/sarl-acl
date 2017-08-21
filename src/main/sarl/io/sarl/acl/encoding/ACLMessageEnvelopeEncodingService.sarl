@@ -1,0 +1,79 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding
+
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.ACLMessageEnvelope
+import io.sarl.acl.message.ACLMessageEnvelopeFactory
+
+/** 
+ * This interface describes the EncodingService which encodes the ACLMessageEnvelope
+ * of an ACLMessage
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+interface ACLMessageEnvelopeEncodingService {
+
+	/** 
+	 * This method encodes the ACLMessageContent of an ACLMessage
+	 * 
+	 * @param env the ACLMessageEnvelope to encode
+	 * @return the ACLMessageEnvelope encoded
+	 */
+    def encode(env : ACLMessageEnvelope) : byte[]
+    
+    /**
+     * This method decodes the ACLMessageEnvelope of an ACLMessage encoded
+     * 
+     * @param encodedEnvelope the ACLMessageEnvelope to decode
+     * @return the ACLMessageEnvelope decoded
+     */
+    def decode(encodedEnvelope : byte[]) : ACLMessageEnvelope
+
+}
+/** 
+ * Abstract implementation of a message envelope encoding service.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+abstract class AbstractACLMessageEnvelopeEncodingService implements ACLMessageEnvelopeEncodingService {
+
+	var envelopeFactory : ACLMessageEnvelopeFactory
+
+	def getMessageEnvelopeFactory : ACLMessageEnvelopeFactory {
+		if (this.envelopeFactory === null) {
+			this.envelopeFactory = new ACLMessage.EnvelopeFactory
+		}
+		this.envelopeFactory
+	}
+
+	def setMessageEnvelopeFactory(factory : ACLMessageEnvelopeFactory) {
+		this.envelopeFactory = factory
+	}
+
+}

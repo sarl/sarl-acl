@@ -1,0 +1,164 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.bitefficient
+
+import io.sarl.acl.encoding.AbstractACLMessageContentEncodingService
+import io.sarl.acl.encoding.bitefficient.constant.EndOfCollection
+import io.sarl.acl.encoding.bitefficient.constant.MessageID
+import io.sarl.acl.encoding.bitefficient.constant.PredefinedMsgParam
+import io.sarl.acl.encoding.bitefficient.constant.Version
+import io.sarl.acl.message.ACLMessage
+import io.sarl.acl.message.ACLMessageContent
+import java.util.List
+
+/** 
+ * This class encodes an ACLMessageContent in bit efficient or decodes an ACLMessageContent encoded in bytes from bit efficient
+ * 
+ * @see <a href="http://fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit Efficient Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+public class BitEfficientACLCodec extends AbstractACLMessageContentEncodingService {
+
+	/** 
+	 * Compute the Bit Efficient representation of an ACLMessage
+	 * 
+	 * @param msg the ACLMessage to encode to bit efficient
+	 * @return list of Byte representing the given ACLMessage
+	 * 
+	 * @see ACLMessage#toXML()
+	 */
+	static def toBitEfficient(msg : ACLMessage) : List<Byte> {
+		var buffer = <Byte>newArrayList
+
+		buffer += MessageID::BITEFFICIENT.code // we don't use code table for now
+		buffer += Version::VERSION.code // 0x10
+		// add the corresponding byte of the performative
+		// we don't deal with user defined performative as done in jade
+		BitEfficientACLCodecHelperEncode::dumpMsgType(buffer, msg.performative)
+
+		BitEfficientACLCodecHelperEncode::dumpAgent(buffer, PredefinedMsgParam::PARAM_SENDER.code, msg.sender)
+
+		BitEfficientACLCodecHelperEncode::dumpAgents(buffer, PredefinedMsgParam::PARAM_RECEIVER.code, msg.receivers)
+
+		BitEfficientACLCodecHelperEncode::dumpAgents(buffer, PredefinedMsgParam::PARAM_REPLY_TO.code, msg.content.replyTo)
+
+		BitEfficientACLCodecHelperEncode::dumpReplyBy(buffer, PredefinedMsgParam::PARAM_REPLY_BY.code, msg.content.replyBy)
+
+		BitEfficientACLCodecHelperEncode::dumpParam(buffer, PredefinedMsgParam::PARAM_REPLY_WITH.code, msg.content.replyWith)
+
+		BitEfficientACLCodecHelperEncode::dumpParam(buffer, PredefinedMsgParam::PARAM_IN_REPLY_TO.code, msg.content.inReplyTo)
+
+		BitEfficientACLCodecHelperEncode::dumpParam(buffer, PredefinedMsgParam::PARAM_LANGUAGE.code, msg.content.language)
+
+		BitEfficientACLCodecHelperEncode::dumpParam(buffer, PredefinedMsgParam::PARAM_ENCODING.code, msg.content.encoding)
+
+		BitEfficientACLCodecHelperEncode::dumpParam(buffer, PredefinedMsgParam::PARAM_ONTOLOGY.code, msg.content.ontology)
+
+		BitEfficientACLCodecHelperEncode::dumpWordParam(buffer, PredefinedMsgParam::PARAM_PROTOCOL.code, msg.content.protocol)
+
+		BitEfficientACLCodecHelperEncode::dumpParam(buffer, PredefinedMsgParam::PARAM_CONVERSATION_ID.code, msg.content.ontology)
+
+		BitEfficientACLCodecHelperEncode::dumpMsgContent(buffer, PredefinedMsgParam::PARAM_CONTENT.code, msg.content.content.toString)
+
+		buffer.add(EndOfCollection::END_OF_COLLECTION.code)
+
+		return buffer
+	}
+
+	def encode(aMsg : ACLMessage) : byte[] {
+		toBitEfficient(aMsg)
+	}
+
+	def decode(byteMsg : byte[], parameters : Object*) : ACLMessageContent {
+		var content = this.messageContentFactory.newContent
+		
+		var buffer : List<Byte> = byteMsg
+		
+		// MessageId
+		BitEfficientACLCodecHelperDecode::readByte(buffer)
+		
+		// Version
+		BitEfficientACLCodecHelperDecode::readByte(buffer)
+		
+		var per = BitEfficientACLCodecHelperDecode::decodePerformative(buffer)
+		content.performative = per
+		
+		var b : Byte
+		while ((b = BitEfficientACLCodecHelperDecode::readByte(buffer)) != EndOfCollection::END_OF_COLLECTION.code) {
+			
+			if (b == PredefinedMsgParam::PARAM_SENDER.code) {
+				
+				content.sender = BitEfficientACLCodecHelperDecode::decodeAgent(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_RECEIVER.code) {
+				
+				content.receivers = BitEfficientACLCodecHelperDecode::decodeAgents(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_REPLY_TO.code) {
+				
+				content.receivers = BitEfficientACLCodecHelperDecode::decodeAgents(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_REPLY_BY.code) {
+				
+				content.replyBy = BitEfficientACLCodecHelperDecode::decodeDate(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_REPLY_WITH.code) {
+				
+				content.replyWith = BitEfficientACLCodecHelperDecode::decodeParam(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_LANGUAGE.code) {
+				
+				content.language = BitEfficientACLCodecHelperDecode::decodeParam(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_ENCODING.code) {
+				
+				content.encoding = BitEfficientACLCodecHelperDecode::decodeParam(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_ONTOLOGY.code) {
+				
+				content.ontology = BitEfficientACLCodecHelperDecode::decodeParam(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_PROTOCOL.code) {
+				
+				content.protocol = BitEfficientACLCodecHelperDecode::decodeParam(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_CONVERSATION_ID.code) {
+				
+				content.conversationID = BitEfficientACLCodecHelperDecode::decodeUUID(buffer)
+				
+			} else if (b == PredefinedMsgParam::PARAM_CONTENT.code) {
+				
+				content.content = BitEfficientACLCodecHelperDecode::decodeMsgContent(buffer)
+				
+			} else {
+				break
+			}
+		}
+		
+		return content
+	}
+	
+}

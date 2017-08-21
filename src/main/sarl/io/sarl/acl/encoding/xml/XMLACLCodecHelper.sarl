@@ -1,0 +1,471 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.xml
+
+import io.sarl.acl.encoding.ACLDateUtil
+import io.sarl.acl.encoding.PayloadEncoding
+import io.sarl.acl.message.Performative
+import java.io.ByteArrayInputStream
+import java.io.StringReader
+import java.text.MessageFormat
+import java.util.Collection
+import java.util.Date
+import java.util.Iterator
+import java.util.UUID
+import java.util.regex.Pattern
+import javax.xml.parsers.DocumentBuilderFactory
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
+import org.w3c.dom.bootstrap.DOMImplementationRegistry
+import org.w3c.dom.ls.DOMImplementationLS
+import org.xml.sax.InputSource
+
+/** 
+ * Helper used in XML encoding (encode and decode). Make the XMLACLCodec class simplier and easier to read.
+ * 
+ * @see <a href="http://www.fipa.org/specs/fipa00071/SC00071E.html">FIPA ACL Message Representation in XML Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+final class XMLACLCodecHelper {
+
+	private new {
+	}
+
+	/** 
+	 * In an ACLMessage, a lot of attributes are not mandatory so we often have to deal with null value.
+	 * This silly method return an empty String if the given object is null or the object itself otherwise
+	 * 
+	 * @param object
+	 * @return an empty String if the given object is null or the object itself otherwise
+	 */
+	public static def ifNotNull(object : Object) : Object {
+		if (object === null) {
+			return ""
+		}
+		return object
+	}
+	
+	/**
+	 * Computes a pretty xml String (ident, ..)
+	 * 
+	 * @param xml a not pretty xml String
+	 * @return a prtty xml String
+	 */
+	static def format(xml : String) : String {
+        try {
+            val src = new InputSource(new StringReader(xml))
+            val document = DocumentBuilderFactory.newInstance.newDocumentBuilder.parse(src).documentElement
+
+            val registry = DOMImplementationRegistry::newInstance
+            val impl = registry.getDOMImplementation(Messages::FORMAT_XML_LS) as DOMImplementationLS
+            val writer = impl.createLSSerializer
+
+            writer.domConfig.setParameter(Messages::FORMAT_XML_PRETTYPINT, true)
+            writer.domConfig.setParameter(Messages::FORMAT_XML_XMLDECLARATION, false)
+
+            return writer.writeToString(document)
+        } catch (e : Exception) {
+            return xml
+        }
+    }
+
+	/** Replies the iterable view on the node list.
+	 * 
+	 * @param children the node list.
+	 * @return the view on the node list.
+	 */
+	static def toIterable(children : NodeList) : Iterable<Node> {
+		[ toIterator(children) ]
+	}
+
+	/** Replies the iterable view on the node list.
+	 * 
+	 * @param children the node list.
+	 * @return the view on the node list.
+	 */
+	static def toIterator(children : NodeList) : Iterator<Node> {
+		new Iterator<Node>() {
+			var i = 0
+			def hasNext : boolean {
+				i < children.length
+			}
+			
+			def next : Node {
+				var node = children.item(i)
+				i++
+				return node
+			}
+		}
+	}
+
+	/** Replies the iterable view on the node list.
+	 * 
+	 * @param children the node list.
+	 * @return the view on the node list.
+	 */
+	static def toElements(children : NodeList) : Iterable<Element> {
+		[toElementIterator(children)]
+	}
+	/** Replies the iterable view on the node list.
+	 * 
+	 * @param children the node list.
+	 * @return the view on the node list.
+	 */
+	static def toElementIterator(children : NodeList) : Iterator<Element> {
+		toIterator(children).filter(typeof(Element))
+	}
+
+	/** Replies the first child element.
+	 * 
+	 * @param <T> is the type of the desired child
+	 * @param parent is the element from which the child must be extracted.
+	 * @return the child node or <code>null</code> if none.
+	 */
+	static def getChild(parent : Document) : Element {
+		var iterator = parent.childNodes.toElementIterator
+		if (iterator.hasNext) iterator.next else null
+	}
+
+	/** Replies the first child node that has the specified name.
+	 * 
+	 * @param <T> is the type of the desired child
+	 * @param parent is the element from which the child must be extracted.
+	 * @param name the name of the child
+	 * @return the child node or <code>null</code> if none.
+	 */
+	static def getChild(parent : Element, name : String) : Element {
+		parent.childNodes.toElementIterator.findFirst [
+			it.nodeName == name
+		]
+	}
+	/** Replies the first child node that has the specified name.
+	 * 
+	 * @param <T> is the type of the desired child
+	 * @param parent is the element from which the child must be extracted.
+	 * @param name the name of the child
+	 * @return the child node or <code>null</code> if none.
+	 */
+	static def getChildren(parent : Element, name : String) : Iterable<Element> {
+		[ parent.getChildrenIterator(name) ]
+	}
+
+	/** Replies the first child node that has the specified name.
+	 * 
+	 * @param <T> is the type of the desired child
+	 * @param parent is the element from which the child must be extracted.
+	 * @param name the name of the child
+	 * @return the child node or <code>null</code> if none.
+	 */
+	static def getChildrenIterator(parent : Element, name : String) : Iterator<Element> {
+		parent.childNodes.toElementIterator.filter [
+			it.nodeName == name
+		]
+	}
+
+	/** 
+	 * Builds the fipa-message begin tag
+	 * ex: <fipa-message act="inform">
+	 * 
+	 * @param sb string buffer which will contains the tag built
+	 * @param performative the Performative of the ACLMessage
+	 * 
+	 * @see #encodeFipaMessageEnd(StringBuffer)
+	 * @see Performative
+	 */
+	static def encodeFipaMessageStart(sb : StringBuilder, performative : Performative) {
+		sb.append(MessageFormat::format(Messages::STARTTAGATTR,
+				Messages::FIPAMESSAGE,
+				Messages::FIPAMESSAGEATTR,
+				performative.fipaName.ifNotNull))
+	}
+	
+	/**
+	 * Builds the fipa-message end tag
+	 * ex: </fipa-message>
+	 * 
+	 * @param sb string buffer which will contains the fipa-message end tag
+	 * 
+	 * @see #encodeFipaMessageStart(StringBuffer, Performative)
+	 */
+	static def encodeFipaMessageEnd(sb : StringBuilder) {
+		sb.append(MessageFormat::format(Messages::ENDTAG,
+				Messages::FIPAMESSAGE))
+	}
+
+	/**
+	 * Builds a agent tag (sender, receiver, reply-to)
+	 * ex: <sender><agent-identifier><name id=".."/></agent-identifier></sender>
+	 * 
+	 * @param sb string buffer which will contains the built tag
+	 * @param tag the name of the tag (sender, receiver, reply-to)
+	 * @param agentAddress the concerned agent
+	 * 
+	 * @see #encodeAgents(StringBuffer, String, Collection)
+	 * @see AgentAddress
+	 */
+	static def encodeAgent(sb : StringBuilder, tag : String, agentAddress : UUID) {
+		sb.append(MessageFormat::format(Messages::STARTTAG, tag))
+		sb.append(MessageFormat::format(Messages::STARTTAG, Messages::AGENTIDENTIFIER))
+		sb.append(MessageFormat::format(Messages::SHORTELT,
+				Messages::NAME,
+				Messages::NAMEATTR,
+				agentAddress.ifNotNull))
+		//TODO Addresses ?
+		sb.append(MessageFormat::format(Messages::ENDTAG, Messages::AGENTIDENTIFIER))
+		sb.append(MessageFormat::format(Messages::ENDTAG, tag))
+	}
+	
+	/**
+	 * Builds several agent tags for only one type of agent (receiver, reply-to)
+	 * ex: <receiver><agent-identifier><name id=".."/></agent-identifier></receiver><receiver><agent-identifier><name id=".."/></agent-identifier></receiver>
+	 * 
+	 * @param sb string buffer which will contains the built tags
+	 * @param tag the name of the tags (receiver, reply-to)
+	 * @param agentAddresses concerned agents
+	 * 
+	 * @see #encodeAgent(StringBuffer, String, AgentAddress)
+	 */
+	static def encodeAgents(sb : StringBuilder, tag : String, agentAddresses : Collection<UUID>) {
+		if (agentAddresses !== null && !agentAddresses.empty) {
+			for (agentAddress : agentAddresses) {
+				encodeAgent(sb, tag, agentAddress)
+			}
+		} else {
+			sb.append(MessageFormat::format(Messages::STARTTAG, tag))
+			sb.append(MessageFormat::format(Messages::ENDTAG, tag))
+		}
+	}
+	
+	/**
+	 * Builds a simple tag. Check if the value contains invalid xml characters (such as < for exameple).
+	 * If it does, a CDATA section is added.
+	 * ex: <tag>value</value> or <tag><![CDATA[value]]></tag>
+	 * 
+	 * @param sb string buffer which will contains the built tag
+	 * @param tag the name of the tag
+	 * @param value value of the tag
+	 */
+	static def encodeBasicElement(sb : StringBuilder, tag : String, value : String) {
+		var p = Pattern::compile(Messages::INVALIDCHARREGEX)
+		
+		var effectiveValue = value.ifNotNull.toString
+		
+		if (p.matcher(effectiveValue).find) {
+			effectiveValue = Messages::CDATABEGIN
+							+ effectiveValue
+							+ Messages::CDATAEND
+		}
+		
+		sb.append(MessageFormat::format(Messages::ELEMENT,
+				tag, 
+				effectiveValue,
+				tag))
+	}
+	
+	/**
+	 * Builds the reply-by tag
+	 * ex: <reply-by time=""/>
+	 * 
+	 * @param sb string buffer wich will contains the reply-by tag
+	 * @param tag the name of the tag (should always be 'reply-by')
+	 * @param value the reply by date value
+	 */
+	static def encodeReplyByDate(sb : StringBuilder, tag : String, value : Date) {
+		sb.append(MessageFormat::format(Messages::SHORTELT,
+				tag, 
+				Messages::REPLYBYATTR,
+				ACLDateUtil.toDateTimeToken(value).ifNotNull))
+	}
+
+	/**
+	 * 
+	 * @param byteMsg the ACLMessage encoded in byte array (payload)
+	 * @param parameters may contains the PayloadEncoding (not mandatory)
+	 * @return a JDOM document from the byteMsg param
+	 * 
+	 * @see XMLACLCodec#decode(byte[], Object...)
+	 */
+	static def getXMLDocument(byteMsg : byte[], parameters : Object*) : Document {
+		var charset = PayloadEncoding::UTF8.value
+		for (parameter : parameters) {
+			if (parameter instanceof PayloadEncoding) {
+				charset = parameter.value
+			}
+		}
+		
+		try {
+			var message = new String(byteMsg, charset)
+			var factory = DocumentBuilderFactory::newInstance
+			var builder = factory.newDocumentBuilder
+			return builder.parse(new ByteArrayInputStream(message.bytes))
+		} catch (e : Exception) {
+			return null
+		}
+	}
+	
+	/**
+	 * Retrieves the Performative
+	 * 
+	 * @param element a JDOM Element which represents the root tag (<fipa-message>)
+	 * @return the decoded Performative
+	 * 
+	 * @see Performative
+	 */
+	static def decodePerformative(element : Element) : Performative {
+		if (element === null || element.getAttribute(Messages::FIPAMESSAGEATTR) === null) {
+			return Performative::NONE
+		}	
+		return Performative::valueOfByName(element.getAttribute(Messages::FIPAMESSAGEATTR))
+	}
+	
+	/**
+	 * Retrieves all the agents of one type (receiver, reply-to)
+	 * 
+	 * @param agentEltList a list of JDOM Element which represents (receiver|reply-to) tags
+	 * @return collection of decoded AgentAddress
+	 * 
+	 * @see #decodeAgent(Element)
+	 * @see AgentAddress
+	 */
+	static def decodeAgents(agentEltList : Iterable<?>) : Collection<UUID> {
+		if (agentEltList === null || agentEltList.empty) {
+			return null
+		}
+		
+		var agents : Collection<UUID>
+		
+		for (o : agentEltList) {
+			if (o instanceof Element) {
+				var agt = o.decodeAgent
+				if (agt !== null) {
+					if (agents === null) {
+						agents = <UUID>newArrayList
+					}
+					agents += agt
+				}
+			}
+		}
+		
+		return agents
+	}
+
+	/**
+	 * Retrieves a AgentAddress (sender, receiver, reply-to)
+	 * 
+	 * @param element a JDOM Element which represents a (sender|receiver|reply-to) tag
+	 * @return the decoded AgentAddress
+	 * 
+	 * @see #decodeAgentAddress(Element)
+	 * @see AgentAddress
+	 */
+	static def decodeAgent(element : Element) : UUID {	
+		if (element === null 
+				|| element.getChild(Messages::AGENTIDENTIFIER) === null
+				|| element.getChild(Messages::AGENTIDENTIFIER).getChild(Messages::NAME) === null
+				|| element.getChild(Messages::AGENTIDENTIFIER).getChild(Messages::NAME).getAttribute(Messages::NAMEATTR) === null) {
+			return null
+		}
+		return element.decodeAgentAddress
+	}
+
+	/** 
+	 * Retrieves a AgentAddress (sender, receiver, reply-to)
+	 * 
+	 * @param element a JDOM Element which represents a (sender|receiver|reply-to) tag
+	 * @return the decoded AgentAddress
+	 * 
+	 * @see #decodeAgent(Element)
+	 * @see AddressUtil#createAgentAddress(UUID)
+	 * @see AgentAddress
+	 */
+	private static def decodeAgentAddress(element : Element) : UUID {
+		try {
+			return UUID.fromString(
+					element.getChild(Messages::AGENTIDENTIFIER)
+					.getChild(Messages::NAME).getAttribute(Messages::NAMEATTR))
+		} catch (e : Exception) {
+			return null
+		}
+	}
+	
+	/**
+	 * Retrieves the String value of a basic tag
+	 * 
+	 * @param element a JDOM Element which represents a basic tag
+	 * @return the value of the tag
+	 */
+	static def decodeStringMsgParam(element : Element) : String {
+		if (element === null || element.nodeValue.nullOrEmpty) {
+			return null
+		}
+		return element.nodeValue
+	}
+	
+	/**
+	 * Retrieves the content of the content
+	 * 
+	 * @param element a JDOM Element which represents the content tag
+	 * @return the content of the content in a StringBuffer
+	 */
+	static def decodeContent(element : Element) : StringBuilder {
+		if (element === null || element.nodeValue.nullOrEmpty) {
+			return null
+		}
+		return new StringBuilder(element.nodeValue)
+	}
+	
+	/**
+	 * Retrieves the reply by date
+	 * @param element a JDOM Element which represents a reply-by tag
+	 * @return the reply by data String value
+	 */
+	static def decodeReplyByDate(element : Element) : Date {
+		if (element === null || element.getAttribute(Messages::REPLYBYATTR) === null) { //$NON-NLS-1$
+			return null
+		}
+		return ACLDateUtil.toDate(element.getAttribute(Messages::REPLYBYATTR))
+	}
+	
+	/**
+	 * Retrieves the conversation ID
+	 * @param element a JDOM Element which represents a conversation-id tag
+	 * @return the UUID of the conversation
+	 */
+	static def decodeConversationId(element : Element) : UUID {
+		if (element === null || element.nodeValue.nullOrEmpty) {
+			return null;
+		}
+		
+		try {
+			return UUID::fromString(element.nodeValue)
+		} catch (e : Exception) {
+			return null
+		}
+	}
+	
+}

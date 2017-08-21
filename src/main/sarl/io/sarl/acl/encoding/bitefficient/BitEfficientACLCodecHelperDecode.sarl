@@ -1,0 +1,296 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.bitefficient
+
+import io.sarl.acl.encoding.ACLDateUtil
+import io.sarl.acl.encoding.bitefficient.constant.AgentIdentifier
+import io.sarl.acl.encoding.bitefficient.constant.BinDateTimeToken
+import io.sarl.acl.encoding.bitefficient.constant.BinString
+import io.sarl.acl.encoding.bitefficient.constant.BinWord
+import io.sarl.acl.encoding.bitefficient.constant.EndOfCollection
+import io.sarl.acl.encoding.bitefficient.constant.PredefinedMsgType
+import io.sarl.acl.message.Performative
+import java.lang.reflect.Array
+import java.util.Collection
+import java.util.Date
+import java.util.List
+import java.util.UUID
+
+/** 
+ * Helper used in bit efficient decoding. Make the BitEfficientACLCodec class simplier and easier to read.
+ * 
+ * @see <a href="http://fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit Efficient Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+final class BitEfficientACLCodecHelperDecode {
+
+	private new {
+	}
+
+	/** 
+	 * Read the performative-byte from the buffer.
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding Performative
+	 */
+	static def decodePerformative(buffer : List<Byte>) : Performative {
+		PredefinedMsgType.getPerformative(readByte(buffer))
+	}
+
+	/** 
+	 * Read a agent address from the buffer
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding Agent Address
+	 */
+	static def decodeAgent(buffer : List<Byte>) : UUID {
+		var ^agent : UUID
+		
+		var b = readByte(buffer) // b == AgentIdentifier.AGENT_NAME_BEGIN == 0x02
+		
+		if (b == AgentIdentifier::AGENT_NAME_BEGIN.code) {
+			var s = getString(buffer)
+			^agent = UUID::fromString(s)
+		}
+		
+		b = readByte(buffer) // b == EndOfCollection.END_OF_COLLECTION == 0x00
+		
+		return ^agent
+	}
+
+	/** 
+	 * Read a collection of agent address from the buffer
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding collection of Agent Address
+	 */
+	static def decodeAgents(buffer : List<Byte>) : Collection<UUID> {
+		var agents : Collection<UUID>
+		
+		while (buffer.get(0) != EndOfCollection::END_OF_COLLECTION.code) {
+			var agt = decodeAgent(buffer)
+			if (agt !== null) {
+				if (agents === null) {
+					agents = <UUID>newArrayList
+				}
+				agents += agt
+			}
+		}
+		
+		readByte(buffer) // EndOfCollection.END_OF_COLLECTION
+		
+		return agents
+	}
+
+	/** 
+	 * Read a date from the buffer 
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding date
+	 */
+	static def decodeDate(buffer : List<Byte>) : Date {
+		var type = readByte(buffer)
+		
+		var bytesRead = readBytes(buffer, 9)
+
+        var s = BinDate::toString(bytesRead)
+        
+        if (type == BinDateTimeToken::ABS_TIME_TYPE_DESIGNATOR.code 
+        		|| type == BinDateTimeToken::REL_TIME_POS_TYPE_DESIGNATOR.code
+                || type == BinDateTimeToken::REL_TIME_NEG_TYPE_DESIGNATOR.code) {
+			s += readByte(buffer).byteValue as char
+        }
+        
+        if (type == BinDateTimeToken::REL_TIME_POS.code
+        	|| type == BinDateTimeToken::REL_TIME_POS_TYPE_DESIGNATOR.code) {
+        	s = '+' + s
+        } else if (type == BinDateTimeToken::REL_TIME_NEG.code
+        	|| type == BinDateTimeToken::REL_TIME_NEG_TYPE_DESIGNATOR.code) {
+        	s = '-' + s
+        }
+        
+        return ACLDateUtil::toDate(s)
+	}
+
+	/** 
+	 * Read a string parameter from the buffer.
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding String parameter
+	 */
+	static def decodeParam(buffer : List<Byte>) : String {
+		getString(buffer)
+	}
+
+	/** 
+	 * Read an UUID from the buffer
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding UUID
+	 */
+	static def decodeUUID(buffer : List<Byte>) : UUID {
+		UUID::fromString(decodeParam(buffer))
+	}
+
+	/** 
+	 * Read a content of an ACLMessage from the buffer
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the string buffer content
+	 */
+	static def decodeMsgContent(buffer : List<Byte>) : StringBuilder {
+		new StringBuilder(decodeParam(buffer))
+	}
+
+	/** 
+	 * Read a String (Word or String) from the buffer
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding String
+	 */
+	private static def getString(buffer : List<Byte>) : String {
+		var type = readByte(buffer)
+		getRealString(type, buffer)
+    }
+
+	/** 
+	 * Read a Word or a String (depending on type byte) from the buffer
+	 * 
+	 * @param type of String (String, Word, ByteLengthEncoded, ..)
+	 * @param buffer buffer from which bytes are read
+	 * @return the corresponding String
+	 */
+	private static def getRealString(type : byte, buffer : List<Byte>) : String {
+    	var decodedString = new StringBuilder
+    	var bytesRead : List<Byte> = newArrayList
+    	
+		if (type == BinWord::WORD_BEGIN.code || type == BinString::STRING_BEGIN.code) {
+			var until = if (type == BinWord::WORD_BEGIN.code) BinString::STRING_END.code else BinWord::WORD_END.code
+			
+			bytesRead = readBytes(buffer, until)
+			decodedString.append(new String(toPrimitive(bytesRead)))
+			
+		} else if (type == BinString::LEN8_BYTE_SEQ_BEGIN.code
+					|| type == BinString.LEN16_BYTE_SEQ_BEGIN.code
+					|| type == BinString.LEN32_BYTE_SEQ_BEGIN.code) {
+			
+			
+			var length = getBLEHeader(buffer, type)
+			decodedString.append("#")
+			decodedString.append(length)
+			decodedString.append("\"");
+			
+			bytesRead = readBytes(buffer, length)			
+			decodedString.append(new String(toPrimitive(bytesRead)))
+		}
+        
+        decodedString.toString
+    }
+
+	/** 
+	 * Read the BLE header from the buffer
+	 * 
+	     * @param buffer buffer from which bytes are read
+	 * @param type the type of BLE (8, 16 or 32 bits)
+	 * @return the corresponding length
+	 */
+	private static def getBLEHeader(buffer : List<Byte>, type : byte) : int {
+    	var length = 0
+    	
+    	if (type == BinString::LEN8_BYTE_SEQ_BEGIN.code) {
+    		length = readByte(buffer)
+        } else if (type == BinString::LEN16_BYTE_SEQ_BEGIN.code) {
+        	length = ((readByte(buffer).bitwiseAnd(0xff))<<8) + (readByte(buffer).bitwiseAnd(0xff))
+        } else if (type == BinString::LEN32_BYTE_SEQ_BEGIN.code) {
+        	length = ((readByte(buffer).bitwiseAnd(0xff))<<24) + ((readByte(buffer).bitwiseAnd(0xff))<<16) + ((readByte(buffer).bitwiseAnd(0xff))<<8) + (readByte(buffer).bitwiseAnd(0xff))
+        }
+    	
+    	return length
+    }
+
+	/** 
+	 * Read bytes from the buffer until it reach the given byte.
+	 * 
+	 * @param buffer buffer from which bytes are read
+	 * @param until byte limit
+	 * @return list of Byte read
+	 */
+	static def readBytes(buffer : List<Byte>, until : byte) : List<Byte> {
+    	var bytesRead = <Byte>newArrayList
+		
+    	var b : Byte
+    	while (((b = readByte(buffer)) != until) && (!buffer.empty)) {
+    		bytesRead += b
+    	}
+    	
+    	return bytesRead
+    }
+
+	/** 
+	 * Read bytes (according to the given number) from the buffer
+	 * 
+	 * @param buffer buffer from which bytes are read
+	     * @param nbBytes number of bytes to read
+	 * @return list of Byte read
+	 */
+	static def readBytes(buffer : List<Byte>, nbBytes : int) : List<Byte> {
+    	var bytesRead = <Byte>newArrayList
+    	
+    	var byteNUmber = nbBytes;
+    	while (byteNUmber > 0 && !buffer.empty) {
+    		bytesRead += buffer.remove(0)
+    		byteNUmber--
+    	}
+
+    	return bytesRead
+    }
+
+	/** 
+	 * Read one byte from the buffer 
+	 * @param buffer buffer from which bytes are read
+	 * @return byte read
+	 */
+	static def readByte(buffer : List<Byte>) : Byte {
+    	buffer.remove(0)
+    }
+
+	/** 
+	 * List of Byte to array of byte
+	 * 
+	 * @param buffer
+	 * @return array of byte from buffer
+	 */
+	private static def toPrimitive(buffer : List<Byte>) : byte[] {
+		var array : byte[] = Array::newInstance(typeof(byte), buffer.size) as byte[]
+		val zero = 0 as byte
+		for (i : 0..<array.length) {
+			var value = buffer.get(i)
+			array.set(i, if(value === null) zero else value.byteValue)
+		}
+    	return array
+    }
+
+}

@@ -1,0 +1,379 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2017 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.acl.encoding.bitefficient
+
+import io.sarl.acl.encoding.ACLDateUtil
+import io.sarl.acl.encoding.bitefficient.constant.AgentIdentifier
+import io.sarl.acl.encoding.bitefficient.constant.BinNumber
+import io.sarl.acl.encoding.bitefficient.constant.BinString
+import io.sarl.acl.encoding.bitefficient.constant.BinWord
+import io.sarl.acl.encoding.bitefficient.constant.EndOfCollection
+import io.sarl.acl.encoding.bitefficient.constant.NumberToken
+import io.sarl.acl.encoding.bitefficient.constant.PredefinedMsgType
+import io.sarl.acl.message.Performative
+import java.util.Collection
+import java.util.Date
+import java.util.List
+import java.util.UUID
+
+/** 
+ * Helper used in bit efficient encoding. Make the BitEfficientACLCodec class simplier and easier to read.
+ * 
+ * @see <a href="http://fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit Efficient Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+final class BitEfficientACLCodecHelperEncode {
+	
+	private new {
+	}
+
+	/** 
+	 * Add byte of the given performative
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param performative a performative of an ACLMessage
+	 */
+	static def dumpMsgType(buffer : List<Byte>, performative : Performative) {
+		buffer += PredefinedMsgType::getCode(performative)
+	}
+
+	/** 
+	 * Add bytes of the given agent. Add the message parameter (sender, receiver) and then add the agent identifier
+	 * representation that encode the information of the agent address.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param msgParam byte representation of the role of the agent to encode (sender = 0x02, receiver = 0x03, ..)
+	 * @param agent agent address to dump
+	 */
+	static def dumpAgent(buffer : List<Byte>, msgParam : byte, ^agent : UUID) {
+		if (^agent !== null) {
+			buffer += msgParam
+			dumpAgentIdentifier(buffer, ^agent)
+		}
+	}
+
+	/** 
+	 * Add bytes of the given agents. Add the message parameter (sender, receiver) and then add an agent identifier
+	 * representation that encode the information of a agent address for the given collection.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param msgParam byte representation of the role of the agent to encode (sender = 0x02, receiver = 0x03, ..)
+	 * @param agents list of agent addresses to dump
+	 */
+	static def dumpAgents(buffer : List<Byte>, msgParam : byte, agents : Collection<UUID>) {
+		if (agents !== null && !agents.empty) {
+			buffer += msgParam
+			if (agents.size > 0) {
+				for (^agent : agents) {
+					dumpAgentIdentifier(buffer, ^agent)
+				}
+			}
+			buffer.add(EndOfCollection::END_OF_COLLECTION.code)
+		}
+	}
+
+	/** 
+	 * Dump an agent address
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param agent agent address to dump
+	 */
+	private static def dumpAgentIdentifier(buffer : List<Byte>, ^agent : UUID) {
+		if (^agent !== null) {
+			buffer += AgentIdentifier::AGENT_NAME_BEGIN.code
+			dumpWord(buffer, ^agent.toString)
+			buffer += EndOfCollection::END_OF_COLLECTION.code
+		}
+	}
+
+	/** 
+	 * Add bytes for the given parameter and its type.
+	 * Deal with String and Word cases.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param msgParam byte representation of predefined parameter
+	 * @param string information to dump
+	 */
+	static def dumpParam(buffer : List<Byte>, msgParam : byte, string : String) {
+		if (string.nullOrEmpty) {
+			return
+		}
+        
+		var newString = ""
+        if (string.contains(" ")) {
+            if (string.charAt(0) != '"') {
+            	newString = '"' + string.escape + '"'
+            }
+        }
+		
+        buffer += msgParam
+        
+        if (newString.isExpression) {
+        	dumpString(buffer, newString)
+        } else if (newString.isString) {
+        	dumpString(buffer, newString)
+        } else {
+        	dumpWord(buffer, newString)
+        }
+	}
+	
+	/**
+	 * Add bytes for the given parameter wich is a simple word and will be encoded as simple word.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param msgParam byte representation of predefined parameter
+	 * @param word the word to dump
+	 */
+	static def dumpWordParam(buffer : List<Byte>, msgParam : byte, word : String) {
+		if (word !== null) {
+			buffer += msgParam
+			dumpWord(buffer, word)
+		}
+	}
+	
+	/** 
+	 * Add bytes for the content parameter. The content is always encoded as a String.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param msgParam byte representation of predefined parameter
+	 * @param content content of an ACLMessage
+	 */
+	static def dumpMsgContent(buffer : List<Byte>, msgParam : byte, content : String) {
+		if (content !== null) {
+			buffer += msgParam
+			dumpString(buffer, content)
+		}
+	}
+	
+	/**
+	 * Add bytes for the reply by parameter. The reply by parameter is always encoded as a date
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param msgParam byte representation of predefined parameter
+	 * @param date the date to dump
+	 */
+	static def dumpReplyBy(buffer : List<Byte>, msgParam : byte, date : Date) {
+		if (date !== null) {
+			buffer += msgParam
+			dumpDate(buffer, date)
+		}
+	}
+	
+	/**
+	 * Add bytes for the given date.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param date the date to dump
+	 */
+	private static def dumpDate(buffer : List<Byte>, date : Date) {
+		var s = ACLDateUtil::toDateTimeToken(date)
+        
+		buffer += BinDate::getDateTimeType(s)
+		buffer += BinDate::toBin(s)
+		
+		if (ACLDateUtil::containsTypeDesignator(s)) {
+			buffer += s.charAt(s.length() - 1) as byte
+		}
+	}
+
+	/**
+	 * Add bytes for the given word
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param word word to dump
+	 */
+	private static def dumpWord(buffer : List<Byte>, word : String) {
+		buffer += BinWord::WORD_BEGIN.code
+		buffer += getBytesFromString(word)
+		buffer += BinWord::WORD_END.code
+	}
+	
+	/**
+	 * Add bytes for the given string.
+	 * Deal with bytes length encoding case.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param string string to dump
+	 */
+	private static def dumpString(buffer : List<Byte>, string : String) {
+		if (string.nullOrEmpty) {
+			return;
+		}
+		
+		var isBLE = (string.charAt(0) == '#')
+		
+		var id = getBinStringId(string)
+		buffer += id.code
+		
+		var newString = ""
+		if (isBLE) {
+			newString = string.substring(string.indexOf('"')+1)
+			dumpBLEHeader(buffer, newString.length)
+		}
+		
+		buffer += getBytesFromString(newString)
+		
+		if (id == BinString::STRING_BEGIN) {
+			buffer += BinString::STRING_END.code
+		}
+	}
+	
+	/**
+	 * Get the bin String ID for a given String
+	 * @param s string
+	 * @return the bin strnig id of s
+	 */
+	private static def getBinStringId(s : String) : BinString {
+		if (s.charAt(0) != '#') { 
+			return BinString::STRING_BEGIN
+		}
+		if (s.length < 256)  {
+			return BinString::LEN8_BYTE_SEQ_BEGIN
+		}
+		if (s.length < 65536) {
+			return BinString::LEN16_BYTE_SEQ_BEGIN
+		}
+		return BinString::LEN32_BYTE_SEQ_BEGIN
+	}
+	
+	/**
+	 * Add bytes corresponding to the length of the byte length encoded string.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param length the length of the string which is BLE
+	 */
+	private static def dumpBLEHeader(buffer : List<Byte>, length : int) {
+        if (length < 256) {
+            buffer += length.bitwiseAnd(0xff) as byte
+        } else if (length < 65536) {
+            buffer += (length >> 8).bitwiseAnd(0xff) as byte
+            buffer += length.bitwiseAnd(0xff) as byte
+        } else {
+        	buffer += (length >> 24).bitwiseAnd(0xff) as byte
+            buffer += (length >> 16).bitwiseAnd(0xff) as byte
+            buffer += (length >> 8).bitwiseAnd(0xff) as byte
+            buffer += length.bitwiseAnd(0xff) as byte
+        }
+    }
+	
+	/**
+	 * Add bytes for the given number.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param number string representing a number
+	 */
+	@SuppressWarnings("unused_private_member")
+	private static def dumpBinNumber(buffer : List<Byte>, number : String) {
+		buffer += BinNumber::DECIMAL_NUMBER_BEGIN.code
+		dumpDigits(buffer, number)
+	}
+	
+	/**
+	 * Add bytes for the given number.
+	 * 
+	 * @param buffer buffer in which bytes will be added
+	 * @param number string representing a number
+	 */
+	private static def dumpDigits(buffer : List<Byte>, number : String) {
+		val length = number.length
+		
+		for (var i = 0 ; i < length ; i+=2) {
+			var d = NumberToken::getCode(number.charAt(i))
+			if ((i+1) < length) {
+				d = d.bitwiseOr(NumberToken::getCode(number.charAt(i)).bitwiseAnd(0x0f)) as byte
+			} else {
+				d = d.bitwiseOr(0x0) as byte
+			}
+			
+			buffer += d
+		}
+		
+		if ((length % 2) == 0) {
+			buffer += 0x00 as byte
+		}
+	}
+	
+	/**
+	 * Get the Bytes of a given String
+	 * 
+	 * @param s string
+	 * @return a collection of Bytes
+	 */
+	private static def getBytesFromString(s : String) : Collection<Byte> {
+		var bytes : List<Byte>
+		
+		if (s !== null) {
+			bytes = newArrayList
+			for (b : s.getBytes()) {
+				bytes += b
+			}
+		}
+		
+		return bytes
+	}
+
+
+	/**
+	 * Escape all " characters in a String. Used in dumpParam when dealing with string with at least one space char.
+	 * 
+	 * @param s string
+	 * @return s with " characters escaped
+	 */
+	private static def escape(s : String) : String {
+        val result = new StringBuilder(s.length)
+        
+        for (i : 0..<s.length) {
+            if (s.charAt(i) == '"' ) {
+                result.append("\\\"")
+            } else {
+                result.append(s.charAt(i));
+            }
+        }
+        
+        return result.toString
+    }
+	
+	/**
+	 * Check if the give string is an expression
+	 * 
+	 * @param s string
+	 * @return boolean
+	 */
+	private static def isExpression(s : String) : boolean {
+		s.charAt(0) == '('
+	}
+	
+	/**
+	 * Check if the give string is a string (according to bit efficient representation)
+	 * 
+	 * @param s string
+	 * @return boolean
+	 */
+	private static def isString(s : String) : boolean {
+		s.charAt(0) == '"' || s.charAt(0) == '#'
+	}
+
+}

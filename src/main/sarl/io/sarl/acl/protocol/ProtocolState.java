@@ -49,4 +49,14 @@ public interface ProtocolState {
 	 */
 	boolean isErrorneous();
 
+	/** Replies if the protocol is finished with a broken protocol.
+	 */
+	boolean isBrokenProtocol();
+
+	/** Replies the name of the state.
+	 *
+	 * @return the name.
+	 */
+	String name();
+
 }

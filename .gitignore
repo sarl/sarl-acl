@@ -1,0 +1,40 @@
+# Xtext generated files
+src/main/generated-sources/
+
+# Xtext templates
+**/*.xml_gen
+**/*.java_gen
+
+# NetBean / Eclipse
+bin/
+**/*.java._trace
+**/*.java_trace
+**/*.smap
+**/.project
+**/.classpath
+**/.settings
+**/.metadata
+
+# Subversion and CVS
+**/.svn/
+**/.cvs/
+
+# Maven
+target/
+
+# Checkstyle
+**/.checkstyle
+
+# Compiled files
+**/*.class
+**/*.dll
+**/*.exe
+
+# Temp files
+**/*.bak
+**/*~
+workspace/
+
+#Others
+**/.DS_Store
+

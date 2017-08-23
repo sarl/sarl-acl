@@ -40,22 +40,7 @@ final class Messages extends NLS {
 
 	public static var FipaRequestProtocol_0 : String
 	public static var FipaRequestProtocol_1 : String
-	public static var FipaRequestProtocol_10 : String
-	public static var FipaRequestProtocol_11 : String
-	public static var FipaRequestProtocol_12 : String
-	public static var FipaRequestProtocol_13 : String
-	public static var FipaRequestProtocol_14 : String
-	public static var FipaRequestProtocol_15 : String
-	public static var FipaRequestProtocol_16 : String
-	public static var FipaRequestProtocol_17 : String
-	public static var FipaRequestProtocol_18 : String
-	public static var FipaRequestProtocol_19 : String
 	public static var FipaRequestProtocol_2 : String
-	public static var FipaRequestProtocol_20 : String
-	public static var FipaRequestProtocol_21 : String
-	public static var FipaRequestProtocol_22 : String
-	public static var FipaRequestProtocol_23 : String
-	public static var FipaRequestProtocol_24 : String
 	public static var FipaRequestProtocol_3 : String
 	public static var FipaRequestProtocol_4 : String
 	public static var FipaRequestProtocol_5 : String

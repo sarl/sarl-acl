@@ -23,10 +23,11 @@ package io.sarl.acl.protocol.request
 import io.sarl.acl.message.ACLMessage
 import io.sarl.acl.message.Performative
 import io.sarl.acl.protocol.EnumFipaProtocol
-import io.sarl.acl.protocol.FipaProtocol
+import io.sarl.acl.protocol.OneToOneFipaProtocol
 import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.protocol.ProtocolState
-import io.sarl.core.Logging
+import java.text.MessageFormat
+import java.util.UUID
 
 /** 
  * Request Interaction protocol.
@@ -39,302 +40,220 @@ import io.sarl.core.Logging
  * @mavengroupid $Groupid$
  * @mavenartifactid $ArtifactId$
  */
-behavior FipaRequestProtocol extends FipaProtocol {
+abstract behavior FipaRequestProtocol extends OneToOneFipaProtocol {
 
-	uses Logging
-
-	protected def initialize {
-		this.maximumParticipants = 2
-	}
-
-	def getProtocolType : EnumFipaProtocol {
+	final def getProtocolType : EnumFipaProtocol {
 		EnumFipaProtocol::FIPA_REQUEST
 	}
 
-	protected def getErrorState : ProtocolState {
-		RequestProtocolState::BROKEN_PROTOCOL
+	protected final def getCancelledState : ProtocolState {
+		RequestProtocolState::CANCELED
 	}
 
+	
+	protected final def getErrorState : ProtocolState {
+		RequestProtocolState::BROKEN_PROTOCOL
+	}
+		
+}
 
+/** 
+ * Initiator part of the Request interaction protocol.
+ * 
+ * @see <a href="http://www.fipa.org/specs/fipa00026/SC00026H.html">FIPA Request Interaction Protocol Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+behavior InitiatorFipaRequestProtocol extends FipaRequestProtocol {
 
-
-
-
+	var resultData : ProtocolResult
+	
 	/** 
 	 * Send a request to the participant.
 	 * This method must be called by the initiator.
 	 * 
-	 * @param content
+	 * @param participant the participant to request to.
+	 * @param requestDescription the description of the request.
 	 */
-	public def request(content : Object) {
-		if (isInitiator && (state == RequestProtocolState::NOT_STARTED)) {
-			sendMessage(content, Performative::REQUEST, participants.get(0))
-			state = RequestProtocolState::WAITING_ANSWER
+	public def request(participant : UUID = null, requestDescription : Object) {
+		if (participant !== null) {
+			participant.initiateAsInitiator
 		}
-		else if(isParticipant){
-			error(Messages::FipaRequestProtocol_0)
-		}
-		else{
-			error(Messages::FipaRequestProtocol_1)
+		if (state == RequestProtocolState::NOT_STARTED) {
+			if (this.participant === null) {
+				addError(Messages::FipaRequestProtocol_9)
+			} else {
+				this.resultData = null
+				state = RequestProtocolState::WAITING_PARTICIPANT_DECISION
+				sendMessage(requestDescription, Performative::REQUEST, this.participant)
+			}
+		} else {
+			addError(MessageFormat::format(Messages::FipaRequestProtocol_0, state.name))
 		}
 	}
 
-	var requestResult : ProtocolResult
+	on ACLMessage [isInitiatedConversation && state == RequestProtocolState::WAITING_PARTICIPANT_DECISION] {
+		if (hasReachedTimeout) {
+			addTimeoutError
+		} else {
+			switch (occurrence.performative) {
+			case REFUSE: {
+				state = RequestProtocolState::PARTICIPANT_REFUSED
+			}
+			case AGREE: {
+				state = RequestProtocolState::PARTICIPANT_AGREED
+			}
+			default:
+				occurrence.performative.addUnpexectedPerformativeError
+			}
+		}
+	}
 
-	on ACLMessage [
-		isParticipant
-		&& state == RequestProtocolState::NOT_STARTED
-		&& hasInitial(Performative.REQUEST)
-	] {
-		initiate(occurrence.sender, ID)
+	on ACLMessage [isInitiatedConversation && state == RequestProtocolState::PARTICIPANT_AGREED] {
+		switch (occurrence.performative) {
+			case FAILURE: {
+				state = RequestProtocolState::PARTICIPANT_FAILURE
+			}
+			case INFORM: {
+				if (this.resultData !== null) {
+					addError(Messages::FipaRequestProtocol_1)
+				} else if (occurrence.content === null) {
+					this.resultData = new ProtocolResult(occurrence.sender, occurrence.performative, null)
+					state = RequestProtocolState::DONE_WITHOUT_RESULT
+				} else {
+					this.resultData = new ProtocolResult(occurrence.sender, occurrence.performative,
+						occurrence.content.content)
+					state = RequestProtocolState::DONE_WITH_RESULT
+				}
+			}
+			default:
+				occurrence.performative.addUnpexectedPerformativeError
+		}
+	}
+
+	on ACLMessage [isInitiatedConversation && state != RequestProtocolState::PARTICIPANT_AGREED
+		&& state != RequestProtocolState::WAITING_PARTICIPANT_DECISION] {
+		addError(MessageFormat::format(Messages::FipaRequestProtocol_2,
+			occurrence.performative.name,
+			state.name))
+	}
+
+	/** Replies the result sent by the participant. */
+	def getResult : ProtocolResult {
+		if (state == RequestProtocolState::DONE_WITHOUT_RESULT || state == RequestProtocolState::DONE_WITH_RESULT) {
+			return this.resultData
+		}
+		return null
+	}
+
+}
+
+/** 
+ * Participant side for the Request interaction protocol.
+ * 
+ * @see <a href="http://www.fipa.org/specs/fipa00026/SC00026H.html">FIPA Request Interaction Protocol Specification</a>
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: ngaud$
+ * @version $FullVersion$
+ * @mavengroupid $Groupid$
+ * @mavenartifactid $ArtifactId$
+ */
+behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
+
+	var requestData : ProtocolResult
+
+	on ACLMessage [isConversationInit(Performative::REQUEST) && this.requestData === null] {
+		this.requestData = new ProtocolResult(occurrence.sender, Performative::REQUEST, occurrence.content.content)
+		state = RequestProtocolState::WAITING_PARTICIPANT_DECISION
 		conversationID = occurrence.conversationID
-		state = RequestProtocolState::WAITING_REQUEST
+		initiator = occurrence.sender
 		resetStartedTime
-		this.requestResult = new ProtocolResult(occurrence.sender, Performative::REQUEST, occurrence.content.content.toString)
+	}
+	
+	on ACLMessage [isConversationInit(Performative::REQUEST) && this.requestData !== null] {
+		addError(Messages::FipaRequestProtocol_3)
 	}
 
-	/** 
-	 * Looks if there is a pending request in the mailbox
-	 * 
-	 * @return ProtocolResult the result
+	/** Replies the request
 	 */
-	public def getRequest : ProtocolResult {
-		
-		if( hasReachedTimeout ){
-			addError(Messages::FipaRequestProtocol_2)
+	def getRequest : ProtocolResult {
+		if (this.requestData !== null) {
+			if (hasReachedTimeout) {
+				addTimeoutError
+				return null
+			}
+			return this.requestData
 		}
-		else{
-			if (isParticipant && (state == RequestProtocolState::NOT_STARTED)) {
-				
-				/* TODO var message = getRefAclAgent().getACLMessage(EnumFipaProtocol.FIPA_REQUEST, Performative.REQUEST);
-				
-				if (message != null) {
-					initiate(message.getSender(), getRefAclAgent().getAddress());
-					
-					setConversationId(message.getConversationId());
-					setState(RequestProtocolState::WAITING_REQUEST);
-					
-					resetStartedTime();
-					
-					return new ProtocolResult(message.getSender(), Performative.REQUEST, message.getContent().getContent().toString());
-				}*/
-			}
-			else if (isInitiator) {
-				addError(Messages::FipaRequestProtocol_3)
-			}
-			else {
-				addError(Messages::FipaRequestProtocol_4)
-			}
-		}
+		addError(Messages::FipaRequestProtocol_4)
 		return null
 	}
-	
-	/**
-	 * Refuses the request made by the initiator.
-	 * This method must be called by the participant.
-	 * 
-	 * @param content
-	 * 
-	 * @see #agree(Object)
-	 */
-	public def refuse(content : Object) {
 
-		if (isParticipant && (state == RequestProtocolState::WAITING_REQUEST)) {
-			sendMessage(content, Performative.REFUSE, getInitiator)
-			setFinalStep
-		}
-		else if (isInitiator) {
-			addError(Messages::FipaRequestProtocol_5)
-		}
-		else{
-			addError(Messages::FipaRequestProtocol_6)
+	/** Refuse a request.
+	 *
+	 * @param reason the reason to refuse
+	 */
+	def refuse(reason : Object = null) {
+		if (state == RequestProtocolState::WAITING_PARTICIPANT_DECISION) {
+			if (hasReachedTimeout) {
+				addTimeoutError
+			} else {
+				state = RequestProtocolState::PARTICIPANT_REFUSED
+				sendMessage(reason, Performative::REFUSE, this.initiator)
+			}
+		} else {
+			addError(MessageFormat::format(Messages::FipaRequestProtocol_5, state.name))
 		}
 	}
-	
-	/**
-	 * Accepts the request made by the initiator.
-	 * This method must be called by the participant.
-	 * 
-	 * Once the request has been agreed upon, 
-	 * then the Participant must send one of the following notifications:
-	 * failure(), informDone(), informResult().
-	 * 
-	 * @param content
-	 * 
-	 * @see #refuse(Object)
-	 * @see #failure(Object)
-	 * @see #informDone(Object)
-	 * @see #informResult(Object)
-	 */
-	public def agree(content : Object) {
 
-		if( isParticipant && (state == RequestProtocolState::WAITING_REQUEST)){
-			sendMessage(content, Performative.AGREE, getInitiator)
-			state = RequestProtocolState::SENDING_RESULT
-		}
-		else if (isInitiator) {
-			addError(Messages::FipaRequestProtocol_7)
-		}
-		else{
-			addError(Messages::FipaRequestProtocol_8)
-		}
-	}
-	
-	/**
-	 * Replies the answer of the participant to the request. (AGREE or REFUSE)
+	/** Accept a request, and start to do the associated job.
 	 * 
-	 * If the request has been agreed upon, 
-	 * then the Participant will send one of the following notifications:
-	 * failure(), informDone(), informResult().
-	 * 
-	 * This notification can be obtained by the initiator thanks to getNotification().
-	 * 
-	 * @return the answer (Performative + Content) or null if no answer.
-	 * 
-	 * @see #refuse(Object)
-	 * @see #agree(Object)
+	 * @param agreementInformation any useful agreement information to provide to the initiator.
 	 */
-	public def getAnswer : ProtocolResult {
-		
-		if (hasReachedTimeout){
-			addError(Messages::FipaRequestProtocol_9)
-		}
-		else{
-			if (isInitiator && (state == RequestProtocolState::WAITING_ANSWER)) {
-				/* TODO
-				var result : ProtocolResult
-				var aMsg  = getRefAclAgent().getACLMessageForConversationId( getConversationId() );
-				
-				if( aMsg != null )
-				{
-					result = new ProtocolResult();
-					result.setPerformative( aMsg.getPerformative() );
-					result.setContent( aMsg.getContent().getContent() );
-					
-					if( result.getPerformative().compareTo(Performative.NOT_UNDERSTOOD) == 0 )
-						setFinalStep();
-					else if( result.getPerformative().compareTo(Performative.REFUSE) == 0 )
-						setFinalStep();
-					else if( result.getPerformative().compareTo(Performative.AGREE) == 0 )
-						setState(RequestProtocolState::WAITING_RESULT);
-					
-					resetStartedTime();
-				}
-				
-				return result;*/
+	def agree(agreementInformation : Object = null) {
+		if (state == RequestProtocolState::WAITING_PARTICIPANT_DECISION) {
+			if (hasReachedTimeout) {
+				addTimeoutError
+			} else {
+				state = RequestProtocolState::PARTICIPANT_AGREED
+				sendMessage(agreementInformation, Performative::AGREE, this.initiator)
 			}
-			else if(isParticipant) {
-				addError(Messages::FipaRequestProtocol_10)
-			}
-			else{
-				addError(Messages::FipaRequestProtocol_11)
-			}
-		}
-		return null
-	}
-	
-	/**
-	 * Once the request has been agreed upon, 
-	 * then the Participant can communicate a failure 
-	 * if it fails in its attempt to fill the request
-	 * 
-	 * @param content
-	 */
-	public def failure(content : Object) {
-		if (isParticipant && (state == RequestProtocolState::SENDING_RESULT)) {
-			sendMessage(content, Performative.FAILURE, getInitiator())
-			setFinalStep
-		}
-		else if( isInitiator ){
-			addError(Messages::FipaRequestProtocol_12)
-		}
-		else{
-			addError(Messages::FipaRequestProtocol_13)
+		} else {
+			addError(MessageFormat::format(Messages::FipaRequestProtocol_6, state.name))
 		}
 	}
-	
-	/**
-	 * Once the request has been agreed upon, 
-	 * then the Participant can communicate an inform-done 
-	 * if it successfully completes the request and only wishes to indicate that it is done.
-	 * 
-	 * @param content
-	 */
-	public def informDone(content : Object) {
-		if( isParticipant && ( state == RequestProtocolState::SENDING_RESULT ) ){
-			sendMessage(content, Performative.INFORM, getInitiator)
-			setFinalStep
-		}
-		else if( isInitiator ){
-			addError(Messages::FipaRequestProtocol_14)
-		}
-		else{
-			addError(Messages::FipaRequestProtocol_15)
-		}
-	}
-	
-	/**
-	 * Once the request has been agreed upon, 
-	 * then the Participant can communicate an inform-result 
-	 * if it wishes to indicate both that it is done and notify the initiator of the results.
-	 * 
-	 * @param content
-	 */
-	public def informResult(content : Object) {
 
-		if( isParticipant && ( state == RequestProtocolState::SENDING_RESULT ) ){
-			sendMessage(content, Performative.INFORM, getInitiator)
-			setFinalStep
-		}
-		else if( isInitiator ){
-			addError(Messages::FipaRequestProtocol_16)
-		}
-		else{
-			addError(Messages::FipaRequestProtocol_17)
-		}
-	}
-	
-	/**
+	/** Indicates that a failure occurred during the request treatment.
 	 * 
-	 * @return the notification (Performative + Content)
-	 * 
-	 * @see #failure(Object)
-	 * @see #informDone(Object)
-	 * @see #informResult(Object)
+	 * @param reason the reason of the failure.
 	 */
-	public def getResult : ProtocolResult {
-
-		if( hasReachedTimeout ){
-			addError(Messages::FipaRequestProtocol_18)
+	def failure(reason : Object = null) {
+		this.requestData = null
+		if (state == RequestProtocolState::PARTICIPANT_AGREED) {
+			state = RequestProtocolState::PARTICIPANT_FAILURE
+			sendMessage(reason, Performative::FAILURE, this.initiator)
+		} else {
+			addError(MessageFormat::format(Messages::FipaRequestProtocol_7, state.name))
 		}
-		else{
-			if (isInitiator && (state == RequestProtocolState::WAITING_RESULT) || state == RequestProtocolState::CANCELING) {
-				/* TODO 
-				ProtocolResult result = null;
-				ACLMessage aMsg = getRefAclAgent().getACLMessageForConversationId( getConversationId() );
-				
-				if( aMsg != null)
-				{
-					result = new ProtocolResult();
-					result.setPerformative( aMsg.getPerformative() );
-					result.setContent( aMsg.getContent().getContent() );
-					
-					setFinalStep();
-					
-					resetStartedTime();
-				}
-				
-				return result;*/
-			}
-			else if(isParticipant){
-				addError(Messages::FipaRequestProtocol_19)
-			}
-			else{
-				addError(Messages::FipaRequestProtocol_20)
-			}
-		}
-		
-		return null
 	}
-		
+
+	/** Indicates that a request treatment is finished.
+	 * 
+	 * @param result the result of the request.
+	 */
+	def informDone(result : Object = null) {
+		this.requestData = null
+		if (state == RequestProtocolState::PARTICIPANT_AGREED) {
+			state = if(result === null) RequestProtocolState::DONE_WITHOUT_RESULT
+				else RequestProtocolState::DONE_WITH_RESULT
+			sendMessage(result, Performative::INFORM, this.initiator)
+		} else {
+			addError(MessageFormat::format(Messages::FipaRequestProtocol_8, state.name))
+		}
+	}
+
 }

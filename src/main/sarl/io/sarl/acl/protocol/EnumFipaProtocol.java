@@ -68,7 +68,7 @@ public enum EnumFipaProtocol {
 	public String getFipaName() { 
 		return this.name; 
 	} 
-	
+
 	/**
 	 * @param name
 	 * @return the field of the protocol enum corresponding to the specified string
@@ -82,4 +82,5 @@ public enum EnumFipaProtocol {
 		} 
 		return EnumFipaProtocol.NONE; 
 	}
+
 }

@@ -18,14 +18,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sarl.acl.protocol
+package io.sarl.acl.^agent
 
 import io.sarl.acl.message.ACLMessage
-import java.util.UUID
-import io.sarl.acl.message.Performative
-import java.util.Collection
+import io.sarl.acl.protocol.EnumFipaProtocol
+import io.sarl.acl.protocol.FipaProtocol
+import io.sarl.acl.protocol.ProtocolState
+import io.sarl.acl.protocol.request.InitiatorFipaRequestProtocol
+import io.sarl.acl.protocol.request.ParticipantFipaRequestProtocol
+import io.sarl.core.Behaviors
 import io.sarl.core.Logging
 import java.text.MessageFormat
+import java.util.UUID
 
 /** 
  * Conversation Manager for FIPA protocols.
@@ -40,100 +44,84 @@ import java.text.MessageFormat
  */
 skill FipaConversationManager implements ConversationManager {
 
-	uses Logging
+	uses Logging, Behaviors
 
-	var conversations = <FipaProtocol>newArrayList 
-	
-	def createConversation(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol {
-		var protocol : FipaProtocol
+	protected def buildParticipantProtocol(protocolType : EnumFipaProtocol) : FipaProtocol {
 		switch (protocolType) {
 			case FIPA_REQUEST: {
-				protocol = new FipaRequestProtocol(this.owner)
-				protocol.state = RequestProtocolState::NOT_STARTED
-			}
-			case FIPA_CONTRACT_NET: {
-				protocol = new FipaContractNetProtocol(this.owner)
-				protocol.state = ContractNetProtocolState::NOT_STARTED
-			}
-			case FIPA_PROPOSE: {
-				protocol = new FipaProposeProtocol(this.owner)
-				protocol.state = ProposeProtocolState::NOT_STARTED
-			}
-			case FIPA_QUERY: {
-				protocol = new FipaQueryProtocol(this.owner)
-				protocol.state = QueryProtocolState::NOT_STARTED
+				return new ParticipantFipaRequestProtocol(this.owner)
 			}
 			default: {
-				error(MessageFormat::format(Messages::FipaConversationManager_0, protocolType.fipaName))
+				error(MessageFormat::format("Unsupported type of protocol for participant: {0}", protocolType.fipaName))
 				return null
 			}
-		}	
-		if (!name.isNullOrEmpty) {
-			protocol.name = name
 		}
-		this.conversations += protocol
+	}
+
+	protected def buildInitiatorProtocol(protocolType : EnumFipaProtocol) : FipaProtocol {
+		switch (protocolType) {
+			case FIPA_REQUEST: {
+				return new InitiatorFipaRequestProtocol(this.owner)
+			}
+			default: {
+				error(MessageFormat::format("Unsupported type of protocol for initiator: {0}", protocolType.fipaName))
+				return null
+			}
+		}
+	}
+	
+	def createConversationAsParticipant(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol {
+		var protocol = protocolType.buildParticipantProtocol
+		if (protocol !== null) {
+			protocol.name = name
+			protocol.registerBehavior
+		} 
 		return protocol
 	}
-	
-	/**
-	 * Creates a conversation 
-	 * @param message
-	 * 
-	 * @return the protocol created
-	 */
-	def createConversationFromMessage(message : ACLMessage) : FipaProtocol {
-		if (EnumFipaProtocol::FIPA_REQUEST == message.protocol
-			&& Performative::REQUEST == message.performative) {
-			return new FipaRequestProtocol(this.owner)
+
+	def createConversationAsInitiator(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol {
+		var protocol = protocolType.buildInitiatorProtocol
+		if (protocol !== null) {
+			protocol.name = name
+			protocol.registerBehavior
+		}
+		return protocol
+	}
+
+	def createConversationAsParticipantFromMessage(message : ACLMessage) : FipaProtocol {
+		if (message !== null) {
+			createConversationAsParticipant(message.protocol)
+			wake(message)
 		}
 		return null
 	}
 
-	/** 
-	 * Gets a protocol with the specified conversation id
-	 * @param conversationId
-	 * 
-	 * @return the protocol with the specified conversationId
-	 */
 	def getConversation(conversationId : UUID) : FipaProtocol {
-		for (protocol : this.conversations) {
-			if (protocol.conversationID == conversationId) {
-				return protocol
-			}
+		return conversations.findFirst [it.conversationID == conversationId]
+	}
+	
+	protected def unregister(protocol : FipaProtocol) {
+		protocol.unregisterBehavior
+	}
+	
+	def removeConversations(state : ProtocolState) {
+		var removables = <FipaProtocol>newArrayList(conversations.filter [it.state == state])
+		for (conversation : removables) {
+			conversation.unregister
+		}
+	}
+
+	def removeConversation(conversationId : UUID) : FipaProtocol {
+		var conversation = conversationId.conversation
+		if (conversation !== null) {
+			conversation.unregister
+			return conversation
 		}
 		return null
 	}
-	
-	/**
-	 * Delete current protocols in the given state
-	 * 
-	 * @param state
-	 */
-	def removeConversations(state : ProtocolState) {
-		var iter = this.conversations.iterator
-		while (iter.hasNext) {
-			var conv = iter.next
-			if (conv.state == state) {
-				iter.remove
-			}
-		}
-	}
 
-	/**
-	 * Gets the list of current conversations.
-	 * @return the list of current conversations.
-	 */
-	def getConversations : Collection<FipaProtocol> {
-		this.conversations.unmodifiableView
+	def getConversations : Iterable<FipaProtocol> {
+		registeredBehaviors.filter(typeof(FipaProtocol))
 	}
-
-	/**
-	 * Sets the list of current conversations.
-	 * @param protocols - the list of current conversations.
-	 */
-	def setConversations(protocols : Collection<? extends FipaProtocol>) {
-		this.conversations = protocols
-	}
-	
 	
 }

@@ -18,10 +18,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sarl.acl.protocol
+package io.sarl.acl.^agent
 
 import io.sarl.acl.message.ACLMessage
-import java.util.Collection
+import io.sarl.acl.protocol.EnumFipaProtocol
+import io.sarl.acl.protocol.FipaProtocol
+import io.sarl.acl.protocol.ProtocolState
 import java.util.UUID
 
 /** 
@@ -38,19 +40,51 @@ import java.util.UUID
 capacity ConversationManager {
 
 	/** 
-	 * Creates a protocol as the initiator
+	 * Creates a protocol as the participant.
+	 *
+	 * <p>This function adds the protocol's behavior to the agent.
+	 *
+	 * <p>A call to this function is equivalent to:<pre><code>
+	 * var protocol = new Participant<protocolType>
+	 * protocol.name = name
+	 * registerBehavior(protocol)
+	 * </code></pre>
+	 *
 	 * @param protocolType
 	 * @param name conversation name.
 	 * @return the protocol created
 	 */
-	def createConversation(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol
+	def createConversationAsParticipant(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol
 
 	/** 
-	 * Creates a conversation 
-	 * @param message
+	 * Creates a protocol as the initiator.
+	 * 
+	 * <p>This function adds the protocol's behavior to the agent.
+	 * 
+	 * <p>A call to this function is equivalent to:<pre><code>
+	 * var protocol = new Initiator<protocolType>
+	 * protocol.name = name
+	 * registerBehavior(protocol)
+	 * </code></pre>
+	 *
+	 * @param protocolType
+	 * @param name conversation name.
 	 * @return the protocol created
 	 */
-	def createConversationFromMessage(message : ACLMessage) : FipaProtocol
+	def createConversationAsInitiator(protocolType : EnumFipaProtocol, name : String = null) : FipaProtocol
+
+	/** 
+	 * Creates a participant conversation from the information stored into the given message.
+	 *
+	 * <p>A call to this function is equivalent to:<pre><code>
+	 * var protocol = createConversationAsParticipant(message.protocol)
+	 * wake(message)
+	 * </code></pre>
+	 *
+	 * @param message the message to parse.
+	 * @return the protocol created
+	 */
+	def createConversationAsParticipantFromMessage(message : ACLMessage) : FipaProtocol
 
 	/** 
 	 * Gets a protocol with the specified conversation id
@@ -66,17 +100,19 @@ capacity ConversationManager {
 	 * @param state
 	 */
 	def removeConversations(state : ProtocolState)
-	
-	/**
+
+	/** 
+	 * Delete current protocol with the given identifier.
+	 * 
+	 * @param conversationId
+	 * @return the removed conversation
+	 */
+	def removeConversation(conversationId : UUID) : FipaProtocol
+
+	/** 
 	 * Gets the list of current conversations.
 	 * @return the list of current conversations.
 	 */
-	def getConversations : Collection<FipaProtocol>
-
-	/**
-	 * Sets the list of current conversations.
-	 * @param protocols - the list of current conversations.
-	 */
-	def setConversations(protocols : Collection<? extends FipaProtocol>)
+	def getConversations : Iterable<FipaProtocol>
 
 }

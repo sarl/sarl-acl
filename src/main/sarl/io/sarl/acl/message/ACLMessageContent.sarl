@@ -137,7 +137,7 @@ interface ACLMessageContent {
 	 * equivalently denotes the object of the action. 
 	 * @return the content of the ACL Message.
 	 */
-	def getContent : CharSequence
+	def getContent : Object
 	
 	/**
 	 * Sets the content of the ACL Message.
@@ -152,7 +152,7 @@ interface ACLMessageContent {
 	 * whose interpretation might be different for the sender and the receiver.
 	 * @param content - the content of the ACL Message.
 	 */
-	def setContent(content : CharSequence)
+	def setContent(content : Object)
 	
 	/**
 	 * Gets the language of the content of the ACL Message.

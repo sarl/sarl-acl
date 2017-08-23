@@ -25,7 +25,7 @@ import io.sarl.acl.protocol.ProtocolState;
 /**
  * This enumeration describes all available states of the Request Protocol.
  * 
- * @see FipaRequestProtocol
+ * @see InitiatorFipaRequestProtocol
  * @see QueryProtocolState
  * 
  * @author $Author: sgalland$
@@ -50,7 +50,7 @@ public enum RequestProtocolState implements ProtocolState {
 	
 	/** Waiting for refuse or agree
 	 */
-	WAITING_PARITCIPANT_DECISION,
+	WAITING_PARTICIPANT_DECISION,
 	
 	/** Request refused
 	 */
@@ -79,7 +79,7 @@ public enum RequestProtocolState implements ProtocolState {
 
 	@Override
 	public boolean isFinished() {
-		return this == PARTICIPANT_FAILURE || this == DONE_WITH_RESULT || this == DONE_WITHOUT_RESULT
+		return this == DONE_WITH_RESULT || this == DONE_WITHOUT_RESULT
 				|| this == PARTICIPANT_REFUSED
 				|| isCancelled() || isErrorneous();
 	}
@@ -91,6 +91,11 @@ public enum RequestProtocolState implements ProtocolState {
 
 	@Override
 	public boolean isErrorneous() {
+		return this == PARTICIPANT_FAILURE || isBrokenProtocol();
+	}
+
+	@Override
+	public boolean isBrokenProtocol() {
 		return this == BROKEN_PROTOCOL;
 	}
 

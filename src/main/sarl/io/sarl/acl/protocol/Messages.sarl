@@ -47,7 +47,9 @@ final class Messages extends NLS {
 	public static var AbstractFipaProtocol_6 : String
 	public static var AbstractFipaProtocol_7 : String
 	public static var AbstractFipaProtocol_8 : String
-	public static var FipaConversationManager_0 : String
+	public static var AbstractFipaProtocol_9 : String
+	public static var AbstractFipaProtocol_10 : String
+	public static var AbstractFipaProtocol_11 : String
 
 	private new {
 	}

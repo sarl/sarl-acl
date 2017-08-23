@@ -75,7 +75,7 @@ public final class ACLMessage extends Event {
     	var sender : UUID
     	var receiver : Collection<UUID>
 		var replyTo : Collection<UUID>
-		var content : CharSequence 
+		var content : Object 
     	var language  : String 
     	var encoding : String 
     	var ontology : String 
@@ -117,11 +117,11 @@ public final class ACLMessage extends Event {
 			this.replyTo = replyTo
 		}
 
-		def getContent : CharSequence {
+		def getContent : Object {
 			this.content
 		}
 
-		def setContent(content : CharSequence) {
+		def setContent(content : Object) {
 			this.content = content
 		}
 
@@ -312,7 +312,7 @@ public final class ACLMessage extends Event {
 	 * @param performative
 	 */
 	new (performative : Performative, content : Object = null) {
-		getContent.content = content.toString
+		getContent.content = content
 		setPerformative = performative
 	}
 

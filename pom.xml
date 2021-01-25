@@ -56,4 +56,18 @@
 		</plugins>
 	</build>
 
+
+	<repositories>
+		<repository>
+			<id>io.sarl.maven-snapshot</id>
+			<snapshots>
+				<enabled>true</enabled> 
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<url>http://maven.sarl.io</url> 
+		</repository>
+	</repositories>
+
 </project>

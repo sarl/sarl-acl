@@ -21,8 +21,9 @@
 
 package io.sarl.acl.encoding.bitefficient
 
-import io.sarl.acl.encoding.AbstractACLMessageEnvelopeEncodingService
-import io.sarl.acl.message.ACLMessageEnvelope
+import io.sarl.acl.encoding.AbstractAclMessageEnvelopeEncodingService
+import io.sarl.acl.message.AclMessageEnvelope
+import io.sarl.acl.message.AclRepresentation
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
@@ -35,41 +36,41 @@ import java.io.ObjectOutputStream
  * @author $Author: sgalland$
  * @author $Author: ngaud$
  * @version $FullVersion$
- * @mavengroupid $Groupid$
+ * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
  */
-class BitEfficientEnvelopeCodec extends AbstractACLMessageEnvelopeEncodingService {
+class BitEfficientEnvelopeCodec extends AbstractAclMessageEnvelopeEncodingService {
 
-	def encode(envelope : ACLMessageEnvelope) : byte[] {
+	override getAclRepresentation : AclRepresentation {
+		AclRepresentation::BIT_EFFICIENT
+	}
+
+	override encode(envelope : AclMessageEnvelope) : byte[] {
 		var encodedEnvelope : byte[]
 
-		// Output flow
 		var byteArrayOutputStream = new ByteArrayOutputStream
-
-		var objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
-		try {
+		
+		try (var objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)) {
 			objectOutputStream.writeObject(envelope) // Serialization of the envelope
 			encodedEnvelope = byteArrayOutputStream.toByteArray // Envelope encoded in array of bytes
 			objectOutputStream.flush
-		} finally {
-			objectOutputStream.close
 		}
 		
 		return encodedEnvelope		
 	}
 
-	def decode(encodedEnvelope : byte[]) : ACLMessageEnvelope {
-		var decodedEnvelope : ACLMessageEnvelope
-		
-		var byteArrayInputStream = new ByteArrayInputStream(encodedEnvelope) // Input flow
-		try {
-			var objectInputStream = new ObjectInputStream(byteArrayInputStream)
+	override decode(encodedEnvelope : byte[], startIndex : int, endIndex : int) : AclMessageEnvelope {
+		val correction = encodedEnvelope.validateIndexes(startIndex, endIndex)
+		val startIdx = correction.key as int
+		val endIdx = correction.value as int
+		var decodedEnvelope : AclMessageEnvelope
+		var byteArrayInputStream = new ByteArrayInputStream(encodedEnvelope, startIdx, endIdx - startIdx)
+		try (var objectInputStream = new ObjectInputStream(byteArrayInputStream)) {
 			// Unserialization of the envelope
-			decodedEnvelope = objectInputStream.readObject as ACLMessageEnvelope 
-		} finally {
-			byteArrayInputStream.close
-		} 
-		
+			decodedEnvelope = objectInputStream.readObject as AclMessageEnvelope 
+		}
 		return decodedEnvelope
 	}
+
 }

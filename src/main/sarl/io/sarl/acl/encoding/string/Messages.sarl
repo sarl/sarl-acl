@@ -39,17 +39,29 @@ final class Messages extends NLS {
 		name
 	}
 
-	public static var SENDER : String
-	public static var RECEIVER : String
-	public static var CONTENT : String
-	public static var ENCODING : String
-	public static var LANGUAGE : String
-	public static var ONTOLOGY : String
-	public static var PROTOCOL : String
-	public static var CONVERSATIONID : String
-	public static var NAME : String
+	public static var NODE_SENDER : String
+	public static var NODE_AGENTIDENTIFIER : String
+	public static var NODE_NAME : String
+	public static var NODE_RECEIVER : String
+	public static var NODE_REPLYBY : String
+	public static var NODE_REPLYTO : String
+	public static var NODE_REPLYWITH : String
+	public static var NODE_INREPLYTO : String
+	public static var NODE_ENCODING : String
+	public static var NODE_PROTOCOL : String
+	public static var NODE_ONTOLOGY : String
+	public static var NODE_LANGUAGE : String
+	public static var NODE_CONVERSATIONID : String
+	public static var NODE_CONTENT : String
+	public static var NODE_FROM : String
+	public static var NODE_DATE : String
+	public static var NODE_COMMENTS : String
+	public static var NODE_PAYLOADLENGTH : String
+	public static var NODE_PAYLOADENCODING : String
+	public static var NODE_TO : String
+	public static var NODE_INTENDEDRECEIVER : String
+	public static var NODE_TRANSPORTBEHAVIOR : String
 
-	private new {
-	}
+	private new {}
 
 }

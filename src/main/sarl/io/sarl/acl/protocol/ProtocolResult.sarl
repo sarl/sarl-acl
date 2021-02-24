@@ -22,86 +22,46 @@
 package io.sarl.acl.protocol
 
 import io.sarl.acl.message.Performative
+import io.sarl.acl.protocol.request.FipaRequestProtocol
 import java.util.UUID
+import org.eclipse.xtend.lib.annotations.Accessors
 
 /** 
  * This class is used to simplify ACL Messages when working with protocols.
- * <p>
- * For example, if you're calling getRequest() from {@link FipaRequestProtocol} 
+ * 
+ * <p>For example, if you're calling getRequest() from {@link FipaRequestProtocol} 
  * you won't get back the whole corresponding ACL Message but only a summarize of it : 
  * the performative and the content.
- * </p>
  * 
  * @author $Author: sgalland$
  * @author $Author: ngaud$
  * @version $FullVersion$
- * @mavengroupid $Groupid$
+ * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
  */
 class ProtocolResult {
 
+	@Accessors
 	var performative : Performative
+
+	@Accessors
 	var content : Object
+
+	@Accessors
 	var author : UUID
 	
 	/**
 	 * Creates a new ProtocoleResult.
-	 * @param author 
-	 * @param performative
-	 * @param content
+	 *
+	 * @param author the identifier of the author of the message. 
+	 * @param performative the performative of the message.
+	 * @param content the content of the message.
 	 */
 	new (author : UUID = null, performative : Performative = null, content : Object = null) {
 		this.author = author;
 		this.performative = performative;
 		this.content = content;
-	}
-
-	/** 
-	 * Gets the performative.
-	 * @return the performative associated to an ACL message
-	 */
-	def getPerformative : Performative {
-		this.performative
-	}
-
-	/** 
-	 * Sets the performative.
-	 * 
-	 * @param performative
-	 */
-	def setPerformative(performative : Performative) {
-		this.performative = performative
-	}
-
-	/** 
-	 * Gets the content.
-	 * @return the content of an ACL message
-	 */
-	def getContent : Object {
-		this.content
-	}
-
-	/** 
-	 * Sets the content.
-	 * 
-	 * @param content
-	 */
-	def setContent(content : Object) {
-		this.content = content
-	}
-
-	/** 
-	 * @return the author
-	 */
-	def getAuthor : UUID {
-		this.author
-	}
-
-	/** 
-	 * @param author the author to set
-	 */
-	def setAuthor(author : UUID) {
-		this.author = author
 	}
 
 }

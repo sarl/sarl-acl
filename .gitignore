@@ -1,5 +1,6 @@
 # Xtext generated files
 src/main/generated-sources/
+src/test/generated-sources/
 
 # Xtext templates
 **/*.xml_gen

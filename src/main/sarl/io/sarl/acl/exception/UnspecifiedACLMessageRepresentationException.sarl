@@ -27,8 +27,9 @@ package io.sarl.acl.exception
  * @author $Author: sgalland$
  * @author $Author: ngaud$
  * @version $FullVersion$
- * @mavengroupid $Groupid$
+ * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
  */
 class UnspecifiedACLMessageRepresentationException extends Exception {
 

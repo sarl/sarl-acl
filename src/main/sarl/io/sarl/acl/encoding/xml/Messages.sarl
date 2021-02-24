@@ -39,25 +39,36 @@ final class Messages extends NLS {
 		name
 	}
 
-	public static var FIPAMESSAGE : String
-	public static var FIPAMESSAGEATTR : String
-	public static var STARTTAGATTR : String
-	public static var STARTTAG : String
-	public static var ENDTAG : String
-	public static var AGENTIDENTIFIER : String
-	public static var ELEMENT : String
-	public static var SHORTELT : String
-	public static var NAME : String
-	public static var NAMEATTR : String
-	public static var INVALIDCHARREGEX : String
-	public static var CDATABEGIN : String
-	public static var CDATAEND : String
-	public static var REPLYBYATTR : String
-	public static var FORMAT_XML_LS : String
-	public static var FORMAT_XML_PRETTYPINT : String
-	public static var FORMAT_XML_XMLDECLARATION : String
+	public static var NODE_FIPAMESSAGE : String
+	public static var NODE_SENDER : String
+	public static var NODE_AGENTIDENTIFIER : String
+	public static var NODE_NAME : String
+	public static var NODE_RECEIVER : String
+	public static var NODE_REPLYTO : String
+	public static var NODE_REPLYWITH : String
+	public static var NODE_REPLYBY : String
+	public static var NODE_INREPLYTO : String
+	public static var NODE_ENCODING : String
+	public static var NODE_LANGUAGE : String
+	public static var NODE_ONTOLOGY : String
+	public static var NODE_PROTOCOL : String
+	public static var NODE_CONVERSATIONID : String
+	public static var NODE_CONTENT : String
+	public static var NODE_ENVELOPE : String
+	public static var NODE_TO : String
+	public static var NODE_INTENDEDRECEIVER : String
+	public static var NODE_TRANSPORTBEHAVIOR : String
 
-	private new {
-	}
+	public static var ATTR_PERFORMATIVE : String
+	public static var ATTR_ID : String
+	public static var ATTR_TIME : String
+	public static var ATTR_FROM : String
+	public static var ATTR_ACLREPRESENTATION : String
+	public static var ATTR_DATE : String
+	public static var ATTR_COMMENTS : String
+	public static var ATTR_PAYLOADLENGTH : String
+	public static var ATTR_PAYLOADENCODING : String
+
+	private new {}
 
 }

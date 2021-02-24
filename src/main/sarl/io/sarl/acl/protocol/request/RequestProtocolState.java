@@ -21,58 +21,70 @@
 
 package io.sarl.acl.protocol.request;
 
+import org.eclipse.xtext.xbase.lib.Pure;
+
 import io.sarl.acl.protocol.ProtocolState;
 
 /**
  * This enumeration describes all available states of the Request Protocol.
- * 
- * @see InitiatorFipaRequestProtocol
- * @see QueryProtocolState
+ *
+ * <center><img src="./doc-files/sequence.png"></center>
  * 
  * @author $Author: sgalland$
  * @author $Author: ngaud$
  * @version $FullVersion$
  * @mavengroupid $Groupid$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
  */
 public enum RequestProtocolState implements ProtocolState {
 
-	/**
+	/** Protocol not started.
 	 */
 	NOT_STARTED,
 
-	/** Canceled
+	/** Canceled.
 	 */
 	CANCELED,
 	
 	/** Protocol was broken due to an error.
 	 */
 	BROKEN_PROTOCOL,
-	
-	/** Waiting for refuse or agree
+
+	/** The participant received a request and is deciding if it refuse or accept.
 	 */
 	WAITING_PARTICIPANT_DECISION,
 	
-	/** Request refused
+	/** Participant has refused the request.
 	 */
 	PARTICIPANT_REFUSED,
 
-	/** Request agreed
+	/** Participant has accepted the request.
 	 */
 	PARTICIPANT_AGREED,
 	
-	/** Finished with failure
+	/** The participant is doing the requested task.
 	 */
-	PARTICIPANT_FAILURE,
+	PARTICIPANT_PROCEED,
 
-	/** Finished without result from the participant
+	/** Task is done by participant without a result.
 	 */
 	DONE_WITHOUT_RESULT,
 
-	/** Finished with result from the participant.
+	/** Task is done by participant with a result.
 	 */
-	DONE_WITH_RESULT;
+	DONE_WITH_RESULT,
 
+	/** Finished with failure.
+	 */
+	PARTICIPANT_FAILURE;
+
+	@Override
+	@Pure
+	public String getName() {
+		return name();
+	}
+	
 	@Override
 	public boolean isStarted() {
 		return this != NOT_STARTED;

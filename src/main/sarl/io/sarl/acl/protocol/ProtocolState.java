@@ -21,6 +21,8 @@
 
 package io.sarl.acl.protocol;
 
+import org.eclipse.xtext.xbase.lib.Pure;
+
 /** 
  * This interface describes any protocol state.
  * 
@@ -31,33 +33,50 @@ package io.sarl.acl.protocol;
  * @version $FullVersion$
  * @mavengroupid $Groupid$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
  */
 public interface ProtocolState {
 
 	/** Replies if the the protocol was started.
+	 *
+	 * @return {@code true} if the protocol was started.
 	 */
+	@Pure
 	boolean isStarted();
 
 	/** Replies if the protocol is finished with an expected termination.
+	 *
+	 * @return {@code true} if the protocol is finished.
 	 */
+	@Pure
 	boolean isFinished();
-	
+
 	/** Replies if the protocol is finished with  a cancellation from the initiator.
+	 *
+	 * @return {@code true} if the protocol was canceled.
 	 */
+	@Pure
 	boolean isCancelled();
 
 	/** Replies if the protocol is finished with an error in the protocol sequence.
+	 *
+	 * @return {@code true} if the protocol has encountered an error.
 	 */
+	@Pure
 	boolean isErrorneous();
 
 	/** Replies if the protocol is finished with a broken protocol.
+	 *
+	 * @return {@code true} if the protocol is broken.
 	 */
+	@Pure
 	boolean isBrokenProtocol();
 
 	/** Replies the name of the state.
 	 *
-	 * @return the name.
+	 * @return the name of the protocol.
 	 */
-	String name();
+	@Pure
+	String getName();
 
 }

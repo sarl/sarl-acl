@@ -21,149 +21,237 @@
 
 package io.sarl.acl.encoding.bitefficient.constant;
 
+import org.eclipse.xtext.xbase.lib.Pure;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.base.Strings;
 
 /** Defines the token from the numbers according to the FIPA specification.
- * 
- * @see <a href="http://www.fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit-Efficient Specification</a> 
  * 
  * @author $Author: flacreus$
  * @author $Author: sroth$
  * @author $Author: cstentz$
+ * @author $Author: sgalland$
  * @version $FullVersion$
  * @mavengroupid $Groupid$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
+ * @see <a href="http://www.fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit-Efficient Specification</a> 
  */
-
 public enum NumberToken {
 
 	/** Padding.
-	 * <p>
-	 * Code {@code 0x00}.
+	 * 
+	 * <p>Code {@code 0x00}.
 	 */
-	PADDING("", (byte) 0x00), //$NON-NLS-1$
+	PADDING('\0', (byte) 0x00), //$NON-NLS-1$
+
 	/** {@code 0}.
-	 * <p>
-	 * Code {@code 0x01}.
+	 *
+	 * <p>Code {@code 0x01}.
 	 */
-	ZERO("0", (byte) 0x01), //$NON-NLS-1$
+	ZERO('0', (byte) 0x01), //$NON-NLS-1$
+
 	/** {@code 1}.
-	 * <p>
-	 * Code {@code 0x02}.
+	 * 
+	 * <p>Code {@code 0x02}.
 	 */
-	ONE("1", (byte) 0x02), //$NON-NLS-1$
+	ONE('1', (byte) 0x02), //$NON-NLS-1$
+
 	/** {@code 2}.
-	 * <p>
-	 * Code {@code 0x03}.
+	 * 
+	 * <p>Code {@code 0x03}.
 	 */
-	TWO("2", (byte) 0x03), //$NON-NLS-1$
+	TWO('2', (byte) 0x03), //$NON-NLS-1$
+
 	/** {@code 3}.
-	 * <p>
-	 * Code {@code 0x04}.
+	 * 
+	 * <p>Code {@code 0x04}.
 	 */
-	THREE("3", (byte) 0x04), //$NON-NLS-1$
+	THREE('3', (byte) 0x04), //$NON-NLS-1$
+
 	/** {@code 4}.
-	 * <p>
-	 * Code {@code 0x05}.
+	 * 
+	 * <p>Code {@code 0x05}.
 	 */
-	FOUR("4", (byte) 0x05), //$NON-NLS-1$
+	FOUR('4', (byte) 0x05), //$NON-NLS-1$
+
 	/** {@code 5}.
-	 * <p>
-	 * Code {@code 0x06}.
+	 * 
+	 * <p>Code {@code 0x06}.
 	 */
-	FIVE("5", (byte) 0x06), //$NON-NLS-1$
+	FIVE('5', (byte) 0x06), //$NON-NLS-1$
+
 	/** {@code 6}.
-	 * <p>
-	 * Code {@code 0x07}.
+	 * 
+	 * <p>Code {@code 0x07}.
 	 */
-	SIX("6", (byte) 0x07), //$NON-NLS-1$
+	SIX('6', (byte) 0x07), //$NON-NLS-1$
+
 	/** {@code 7}.
-	 * <p>
-	 * Code {@code 0x08}.
+	 * 
+	 * <p>Code {@code 0x08}.
 	 */
-	SEVEN("7", (byte) 0x08), //$NON-NLS-1$
+	SEVEN('7', (byte) 0x08), //$NON-NLS-1$
+
 	/** {@code 8}.
-	 * <p>
-	 * Code {@code 0x09}.
+	 * 
+	 * <p>Code {@code 0x09}.
 	 */
-	EIGHT("8", (byte) 0x09), //$NON-NLS-1$
+	EIGHT('8', (byte) 0x09), //$NON-NLS-1$
+
 	/** {@code 9}.
-	 * <p>
-	 * Code {@code 0x0a}.
+	 * 
+	 * <p>Code {@code 0x0A}.
 	 */
-	NINE("9", (byte) 0x0a), //$NON-NLS-1$
+	NINE('9', (byte) 0x0A), //$NON-NLS-1$
+
 	/** {@code +}.
-	 * <p>
-	 * Code {@code 0x0b}.
+	 * 
+	 * <p>Code {@code 0x0B}.
 	 */
-	PLUS("+", (byte) 0x0b), //$NON-NLS-1$
+	PLUS('+', (byte) 0x0B), //$NON-NLS-1$
+
 	/** {@code E}.
-	 * <p>
-	 * Code {@code 0x0c}.
+	 * 
+	 * <p>Code {@code 0x0C}.
 	 */
-	EXPONENT("E", (byte) 0x0c), //$NON-NLS-1$
+	EXPONENT('E', (byte) 0x0C), //$NON-NLS-1$
+
 	/** {@code -}.
-	 * <p>
-	 * Code {@code 0x0d}.
+	 * 
+	 * <p>Code {@code 0x0D}.
 	 */
-	MINUS("-", (byte) 0x0d), //$NON-NLS-1$
+	MINUS('-', (byte) 0x0D), //$NON-NLS-1$
+
 	/** {@code .}.
-	 * <p>
-	 * Code {@code 0x0e}.
+	 * 
+	 * <p>Code {@code 0x0E}.
 	 */
-	DOT(".", (byte) 0x0e); //$NON-NLS-1$
-	
-	private final String token;
+	DOT('.', (byte) 0x0E); //$NON-NLS-1$
+
+	private final char token;
+
 	private final byte code;
-	
-	private NumberToken(String token, byte code){
+
+	private NumberToken(char token, byte code) {
 		this.token = token;
 		this.code = code;
 	}
-	
+
 	/** Replies the code from the FIPA specification.
 	 * 
 	 * @return the code.
 	 */
-	public byte getCode() {
+	@Pure
+	public byte getBinaryCode() {
 		return this.code;
 	}
-	
+
+	/** Replies the code of the token that is corresponding to the given character.
+	 * 
+	 * @param token the token to search for.
+	 * @return the code, or the code {@link #PADDING} if the character is not
+	 *     recognized.
+	 */
+	@Pure
+	public static byte getBinaryCode(char token) {
+		final char uctoken = Character.toUpperCase(token);
+		for (NumberToken value : values()) { 
+			if (value.getToken() == uctoken) { 
+				return value.getBinaryCode();
+			} 
+		}
+		return PADDING.getBinaryCode(); 
+	}
+
 	/** Replies the string-representation of the token from the FIPA specification.
 	 * 
 	 * @return the string-representation of the token.
 	 */
-	public String getToken() {
+	@Pure
+	public char getToken() {
 		return this.token;
 	}
-	
-	/** Replies the code of the token that is corresponding to the given character.
-	 * 
-	 * @param token
-	 * @return the code, or the code {@link #PADDING} if the character is not
-	 * recognized.
-	 */
-	public static byte getCode(char token) {
-		for (NumberToken value : values()) { 
-			if (value.getToken().equalsIgnoreCase(Character.toString(token))) { 
-				return value.getCode();
-			} 
-		}
-		return NumberToken.PADDING.getCode(); 
-	}
-	
+
 	/** Replies the string-representation of the given code.
 	 * 
-	 * @param code
+	 * @param code the code to search for.
 	 * @return the string representation of the given code,
-	 * or the string-representation of {@link #PADDING} if the
-	 * code is not recognized.
+	 *     or the string-representation of {@link #PADDING} if the
+	 *     code is not recognized.
 	 */
-	public static String getToken(byte code) {
+	@Pure
+	public static char getToken(byte code) {
 		for (NumberToken value : values()) { 
-			if (value.getCode() == code) { 
+			if (value.getBinaryCode() == code) { 
 				return value.getToken();
 			} 
 		}
-		return NumberToken.PADDING.getToken();
+		return PADDING.getToken();
 	}
+
+	/** Replies the Json string representation of this type.
+	 *
+	 * @return the Json string representation.
+	 */
+	@JsonValue
+	@Pure
+	public String toJsonString() {
+		return name().toLowerCase();
+	}
+
+	/** Parse the given case insensitive string for obtaining the message type.
+	 *
+	 * @param name the string to parse.
+	 * @return the type.
+	 * @throws NullPointerException when the specified name is null
+	 */
+	@JsonCreator
+	@Pure
+	public static NumberToken valueOfCaseInsensitive(String name) {
+		if (Strings.isNullOrEmpty(name)) {
+			throw new NullPointerException("name is null"); //$NON-NLS-1$
+		}
+		final String ucname = name.toUpperCase();
+		final char ctoken = ucname.charAt(0);
+		final String lcname = name.toLowerCase();
+		try {
+			for (final NumberToken token : values()) {
+				if (ucname.equals(token.name())) {
+					return token;
+				}
+				if (lcname.equals(token.toJsonString())) {
+					return token;
+				}
+				if (ctoken == token.getToken()) {
+					return token;
+				}
+			}
+		} catch (Throwable exception) {
+			//
+		}
+		throw new IllegalArgumentException("illegal value for name: " + name); //$NON-NLS-1$
+	}	
+
+	/** Replies the Json labels for the types of messages.
+	 *
+	 * @return the labels.
+	 */
+	@Pure
+	public static String getJsonLabels() {
+		final StringBuilder buffer = new StringBuilder();
+		boolean first = true;
+		for (final NumberToken token : values()) {
+			if (first) {
+				first = false;
+			} else {
+				buffer.append(", "); //$NON-NLS-1$
+			}
+			buffer.append(token.toJsonString());
+		}
+		return buffer.toString();
+	}
+
 }

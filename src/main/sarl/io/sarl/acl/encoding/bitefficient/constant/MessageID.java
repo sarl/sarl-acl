@@ -21,48 +21,57 @@
 
 package io.sarl.acl.encoding.bitefficient.constant;
 
+import org.eclipse.xtext.xbase.lib.Pure;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.base.Strings;
+
 /**
  * This enumeration describes all available constant for MessageID as
  * defined by FIPA for Bit-Efficient encoding, 
  * and their setter (used for decoding process - java reflection tips).
- * <p>
- * The first byte defines the message identifier. The identifier byte
+ * 
+ * <p>The first byte defines the message identifier. The identifier byte
  * can be used to separate bit-efficient ACL messages
  * from (for example) string-based messages and separate different
  * coding schemes.
  * 
- * @see <a href="http://www.fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit-Efficient Specification</a> 
- * 
  * @author $Author: flacreus$
  * @author $Author: sroth$
  * @author $Author: cstentz$
+ * @author $Author: sgalland$
  * @version $FullVersion$
  * @mavengroupid $Groupid$
  * @mavenartifactid $ArtifactId$
+ * @since 0.12
+ * @see <a href="http://www.fipa.org/specs/fipa00069/SC00069G.html">FIPA ACL Message Representation in Bit-Efficient Specification</a> 
  */
 public enum MessageID {
 	
 	/** The value 0xFA defines a bit- efficient coding scheme without dynamic code tables.
-	 * <p>
-	 * Code: {@code 0xFA}.
+	 * 
+	 * <p>Code: {@code 0xFA}.
 	 */
 	BITEFFICIENT((byte) 0xFA),
+
 	/** The value 0xFB defines a bit-efficient coding scheme with dynamic code tables.
-	 * <p>
-	 * Code: {@code 0xFB}.
+	 * 
+	 * <p>Code: {@code 0xFB}.
 	 */
 	BITEFFICIENT_CODETABLE ((byte) 0xFB),
+
 	/** The message identifier 0xFC is used when dynamic code tables are being used, 
 	 * but the sender does not want to update code tables (even if message contains
 	 * strings that should be added to code table).
-	 * <p>
-	 * Code: {@code 0xFC}.
+	 * 
+	 * <p>Code: {@code 0xFC}.
 	 */ 
 	BITEFFICIENT_NO_CODETABLE ((byte) 0xFC);
 	
 	private final byte code;
 	
-	private MessageID(byte code){
+	private MessageID(byte code) {
 		this.code = code;
 	}
 	
@@ -70,9 +79,67 @@ public enum MessageID {
 	 * 
 	 * @return the code.
 	 */
-	public byte getCode() {
+	@Pure
+	public byte getBinaryCode() {
 		return this.code;
 	}
-	
+
+	/** Replies the Json string representation of this id.
+	 *
+	 * @return the Json string representation.
+	 */
+	@JsonValue
+	@Pure
+	public String toJsonString() {
+		return name().toLowerCase();
+	}
+
+	/** Parse the given case insensitive string for obtaining the id.
+	 *
+	 * @param name the string to parse.
+	 * @return the type.
+	 * @throws NullPointerException when the specified name is null
+	 */
+	@JsonCreator
+	@Pure
+	public static MessageID valueOfCaseInsensitive(String name) {
+		if (Strings.isNullOrEmpty(name)) {
+			throw new NullPointerException("name is null"); //$NON-NLS-1$
+		}
+		final String ucname = name.toUpperCase();
+		final String lcname = name.toLowerCase();
+		try {
+			for (final MessageID id : values()) {
+				if (ucname.equals(id.name())) {
+					return id;
+				}
+				if (lcname.equals(id.toJsonString())) {
+					return id;
+				}
+			}
+		} catch (Throwable exception) {
+			//
+		}
+		throw new IllegalArgumentException("illegal value for name: " + name); //$NON-NLS-1$
+	}	
+
+	/** Replies the Json labels for the id.
+	 *
+	 * @return the labels.
+	 */
+	@Pure
+	public static String getJsonLabels() {
+		final StringBuilder buffer = new StringBuilder();
+		boolean first = true;
+		for (final MessageID id : values()) {
+			if (first) {
+				first = false;
+			} else {
+				buffer.append(", "); //$NON-NLS-1$
+			}
+			buffer.append(id.toJsonString());
+		}
+		return buffer.toString();
+	}
 
 }

@@ -21,240 +21,44 @@
 
 package io.sarl.acl.protocol.request
 
-import io.sarl.acl.message.ACLMessage
-import io.sarl.acl.message.Performative
-import io.sarl.acl.protocol.EnumFipaProtocol
-import io.sarl.acl.protocol.OneToOneFipaProtocol
-import io.sarl.acl.protocol.ProtocolResult
+import io.sarl.acl.protocol.OneToOneAclProtocol
 import io.sarl.acl.protocol.ProtocolState
-import java.text.MessageFormat
-import java.util.UUID
+import io.sarl.lang.core.Agent
+import io.sarl.acl.protocol.AclProtocolId
 
 /** 
  * Request Interaction protocol.
- * 
- * @see <a href="http://www.fipa.org/specs/fipa00026/SC00026H.html">FIPA Request Interaction Protocol Specification</a>
+ *
+ * <center><img src="./doc-files/sequence.png"></center>
  * 
  * @author $Author: sgalland$
  * @author $Author: ngaud$
  * @version $FullVersion$
- * @mavengroupid $Groupid$
+ * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
+ * @see <a href="http://www.fipa.org/specs/fipa00026/SC00026H.html">FIPA Request Interaction Protocol Specification</a>
  */
-abstract behavior FipaRequestProtocol extends OneToOneFipaProtocol {
+abstract behavior FipaRequestProtocol extends OneToOneAclProtocol {
 
-	final def getProtocolType : EnumFipaProtocol {
-		EnumFipaProtocol::FIPA_REQUEST
+	new (owner : Agent) {
+		super(owner)
+		RequestProtocolState::NOT_STARTED.change(null)
 	}
 
-	protected final def getCancelledState : ProtocolState {
+	final override getAclProtocolId : AclProtocolId {
+		AclProtocolId::FIPA_REQUEST
+	}
+
+	final override isStarted : boolean {
+		getState != RequestProtocolState::NOT_STARTED
+	}
+
+	protected final override getCancelledState : ProtocolState {
 		RequestProtocolState::CANCELED
 	}
 
-	
-	protected final def getErrorState : ProtocolState {
+	protected final override getErrorState : ProtocolState {
 		RequestProtocolState::BROKEN_PROTOCOL
 	}
 		
-}
-
-/** 
- * Initiator part of the Request interaction protocol.
- * 
- * @see <a href="http://www.fipa.org/specs/fipa00026/SC00026H.html">FIPA Request Interaction Protocol Specification</a>
- * 
- * @author $Author: sgalland$
- * @author $Author: ngaud$
- * @version $FullVersion$
- * @mavengroupid $Groupid$
- * @mavenartifactid $ArtifactId$
- */
-behavior InitiatorFipaRequestProtocol extends FipaRequestProtocol {
-
-	var resultData : ProtocolResult
-	
-	/** 
-	 * Send a request to the participant.
-	 * This method must be called by the initiator.
-	 * 
-	 * @param participant the participant to request to.
-	 * @param requestDescription the description of the request.
-	 */
-	def request(participant : UUID = null, requestDescription : Object) {
-		if (participant !== null) {
-			participant.initiateAsInitiator
-		}
-		if (state == RequestProtocolState::NOT_STARTED) {
-			if (this.participant === null) {
-				addError(Messages::FipaRequestProtocol_9)
-			} else {
-				this.resultData = null
-				state = RequestProtocolState::WAITING_PARTICIPANT_DECISION
-				sendMessage(requestDescription, Performative::REQUEST, this.participant)
-			}
-		} else {
-			addError(MessageFormat::format(Messages::FipaRequestProtocol_0, state.name))
-		}
-	}
-
-	on ACLMessage [isInitiatedConversation && state == RequestProtocolState::WAITING_PARTICIPANT_DECISION] {
-		if (hasReachedTimeout) {
-			addTimeoutError
-		} else {
-			switch (occurrence.performative) {
-			case REFUSE: {
-				state = RequestProtocolState::PARTICIPANT_REFUSED
-			}
-			case AGREE: {
-				state = RequestProtocolState::PARTICIPANT_AGREED
-			}
-			default:
-				occurrence.performative.addUnpexectedPerformativeError
-			}
-		}
-	}
-
-	on ACLMessage [isInitiatedConversation && state == RequestProtocolState::PARTICIPANT_AGREED] {
-		switch (occurrence.performative) {
-			case FAILURE: {
-				state = RequestProtocolState::PARTICIPANT_FAILURE
-			}
-			case INFORM: {
-				if (this.resultData !== null) {
-					addError(Messages::FipaRequestProtocol_1)
-				} else if (occurrence.content === null) {
-					this.resultData = new ProtocolResult(occurrence.sender, occurrence.performative, null)
-					state = RequestProtocolState::DONE_WITHOUT_RESULT
-				} else {
-					this.resultData = new ProtocolResult(occurrence.sender, occurrence.performative,
-						occurrence.content.content)
-					state = RequestProtocolState::DONE_WITH_RESULT
-				}
-			}
-			default:
-				occurrence.performative.addUnpexectedPerformativeError
-		}
-	}
-
-	on ACLMessage [isInitiatedConversation && state != RequestProtocolState::PARTICIPANT_AGREED
-		&& state != RequestProtocolState::WAITING_PARTICIPANT_DECISION] {
-		addError(MessageFormat::format(Messages::FipaRequestProtocol_2,
-			occurrence.performative.name,
-			state.name))
-	}
-
-	/** Replies the result sent by the participant. */
-	def getResult : ProtocolResult {
-		if (state == RequestProtocolState::DONE_WITHOUT_RESULT || state == RequestProtocolState::DONE_WITH_RESULT) {
-			return this.resultData
-		}
-		return null
-	}
-
-}
-
-/** 
- * Participant side for the Request interaction protocol.
- * 
- * @see <a href="http://www.fipa.org/specs/fipa00026/SC00026H.html">FIPA Request Interaction Protocol Specification</a>
- * 
- * @author $Author: sgalland$
- * @author $Author: ngaud$
- * @version $FullVersion$
- * @mavengroupid $Groupid$
- * @mavenartifactid $ArtifactId$
- */
-behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
-
-	var requestData : ProtocolResult
-
-	on ACLMessage [isConversationInit(Performative::REQUEST) && this.requestData === null] {
-		this.requestData = new ProtocolResult(occurrence.sender, Performative::REQUEST, occurrence.content.content)
-		state = RequestProtocolState::WAITING_PARTICIPANT_DECISION
-		conversationID = occurrence.conversationID
-		initiator = occurrence.sender
-		resetStartedTime
-	}
-	
-	on ACLMessage [isConversationInit(Performative::REQUEST) && this.requestData !== null] {
-		addError(Messages::FipaRequestProtocol_3)
-	}
-
-	/** Replies the request
-	 */
-	def getRequest : ProtocolResult {
-		if (this.requestData !== null) {
-			if (hasReachedTimeout) {
-				addTimeoutError
-				return null
-			}
-			return this.requestData
-		}
-		addError(Messages::FipaRequestProtocol_4)
-		return null
-	}
-
-	/** Refuse a request.
-	 *
-	 * @param reason the reason to refuse
-	 */
-	def refuse(reason : Object = null) {
-		if (state == RequestProtocolState::WAITING_PARTICIPANT_DECISION) {
-			if (hasReachedTimeout) {
-				addTimeoutError
-			} else {
-				state = RequestProtocolState::PARTICIPANT_REFUSED
-				sendMessage(reason, Performative::REFUSE, this.initiator)
-			}
-		} else {
-			addError(MessageFormat::format(Messages::FipaRequestProtocol_5, state.name))
-		}
-	}
-
-	/** Accept a request, and start to do the associated job.
-	 * 
-	 * @param agreementInformation any useful agreement information to provide to the initiator.
-	 */
-	def agree(agreementInformation : Object = null) {
-		if (state == RequestProtocolState::WAITING_PARTICIPANT_DECISION) {
-			if (hasReachedTimeout) {
-				addTimeoutError
-			} else {
-				state = RequestProtocolState::PARTICIPANT_AGREED
-				sendMessage(agreementInformation, Performative::AGREE, this.initiator)
-			}
-		} else {
-			addError(MessageFormat::format(Messages::FipaRequestProtocol_6, state.name))
-		}
-	}
-
-	/** Indicates that a failure occurred during the request treatment.
-	 * 
-	 * @param reason the reason of the failure.
-	 */
-	def failure(reason : Object = null) {
-		this.requestData = null
-		if (state == RequestProtocolState::PARTICIPANT_AGREED) {
-			state = RequestProtocolState::PARTICIPANT_FAILURE
-			sendMessage(reason, Performative::FAILURE, this.initiator)
-		} else {
-			addError(MessageFormat::format(Messages::FipaRequestProtocol_7, state.name))
-		}
-	}
-
-	/** Indicates that a request treatment is finished.
-	 * 
-	 * @param result the result of the request.
-	 */
-	def informDone(result : Object = null) {
-		this.requestData = null
-		if (state == RequestProtocolState::PARTICIPANT_AGREED) {
-			state = if(result === null) RequestProtocolState::DONE_WITHOUT_RESULT
-				else RequestProtocolState::DONE_WITH_RESULT
-			sendMessage(result, Performative::INFORM, this.initiator)
-		} else {
-			addError(MessageFormat::format(Messages::FipaRequestProtocol_8, state.name))
-		}
-	}
-
 }

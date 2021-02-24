@@ -39,18 +39,15 @@ final class Messages extends NLS {
 		name
 	}
 
-	public static var AbstractFipaProtocol_0 : String
-	public static var AbstractFipaProtocol_1 : String
-	public static var AbstractFipaProtocol_2 : String
-	public static var AbstractFipaProtocol_3 : String
-	public static var AbstractFipaProtocol_4 : String
-	public static var AbstractFipaProtocol_5 : String
-	public static var AbstractFipaProtocol_6 : String
-	public static var AbstractFipaProtocol_7 : String
-	public static var AbstractFipaProtocol_8 : String
-	public static var AbstractFipaProtocol_9 : String
-	public static var AbstractFipaProtocol_10 : String
-	public static var AbstractFipaProtocol_11 : String
+	public static var AclProtocol_0 : String
+	public static var AclProtocol_1 : String
+	public static var AclProtocol_2 : String
+	public static var AclProtocol_3 : String
+	public static var AclProtocol_4 : String
+	public static var AclProtocol_5 : String
+	public static var AclProtocol_6 : String
+	public static var AclProtocol_7 : String
+	public static var AclProtocol_8 : String
 
 	private new {
 	}

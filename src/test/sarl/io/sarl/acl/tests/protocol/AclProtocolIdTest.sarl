@@ -76,6 +76,7 @@ class AclProtocolIdTest {
 		"fipa_request".assertEquals(AclProtocolId::FIPA_REQUEST.consume.toJsonString)
 		"fipa_propose".assertEquals(AclProtocolId::FIPA_PROPOSE.consume.toJsonString)
 		"fipa_query".assertEquals(AclProtocolId::FIPA_QUERY.consume.toJsonString)
+		"fipa_request_when".assertEquals(AclProtocolId::FIPA_REQUEST_WHEN.consume.toJsonString)
 		assertNoMoreConstant
 	}
 
@@ -86,6 +87,7 @@ class AclProtocolIdTest {
 		"fipa-request".assertEquals(AclProtocolId::FIPA_REQUEST.consume.getCode)
 		"fipa-propose".assertEquals(AclProtocolId::FIPA_PROPOSE.consume.getCode)
 		"fipa-query".assertEquals(AclProtocolId::FIPA_QUERY.consume.getCode)
+		"fipa-request-when".assertEquals(AclProtocolId::FIPA_REQUEST_WHEN.consume.getCode)
 		assertNoMoreConstant
 	}
 
@@ -111,6 +113,10 @@ class AclProtocolIdTest {
 		AclProtocolId::FIPA_QUERY.assertSame(AclProtocolId::valueOfCaseInsensitive("Fipa_Query"))
 		AclProtocolId::FIPA_QUERY.assertSame(AclProtocolId::valueOfCaseInsensitive("Fipa-Query"))
 
+		AclProtocolId::FIPA_REQUEST_WHEN.consume.assertSame(AclProtocolId::valueOfCaseInsensitive("fipa_request_when"))
+		AclProtocolId::FIPA_REQUEST_WHEN.assertSame(AclProtocolId::valueOfCaseInsensitive("Fipa_Request_When"))
+		AclProtocolId::FIPA_REQUEST_WHEN.assertSame(AclProtocolId::valueOfCaseInsensitive("Fipa-Request-When"))
+
 		assertNoMoreConstant
 	}
 
@@ -132,7 +138,7 @@ class AclProtocolIdTest {
 	
 	@Test
 	def getJsonLabels : void {
-		"none, sarl_pingpong, fipa_request, fipa_propose, fipa_query".assertEquals(AclProtocolId::jsonLabels)
+		"none, sarl_pingpong, fipa_request, fipa_propose, fipa_query, fipa_request_when".assertEquals(AclProtocolId::jsonLabels)
 	}
 
 }

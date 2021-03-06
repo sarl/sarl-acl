@@ -59,12 +59,19 @@ public enum AclProtocolId {
 	 */
 	FIPA_PROPOSE("fipa-propose"), //$NON-NLS-1$
 	
-	/** FIPA Propose protocol.
+	/** FIPA Query protocol.
 	 * 
 	 * @see <a href="http://www.fipa.org/specs/fipa00027/SC00027H.html">FIPA Query
 	 *      Interaction Protocol Specification</a>
 	 */
-	FIPA_QUERY("fipa-query"); //$NON-NLS-1$
+	FIPA_QUERY("fipa-query"), //$NON-NLS-1$
+
+	/** FIPA Request-When protocol.
+	 * 
+	 * @see <a href="http://www.fipa.org/specs/fipa00028/SC00028H.html">FIPA Request-When
+	 *      Interaction Protocol Specification</a>
+	 */
+	FIPA_REQUEST_WHEN("fipa-request-when"); //$NON-NLS-1$
 
 	private final String code;
 	

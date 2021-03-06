@@ -166,8 +166,9 @@ behavior ParticipantFipaProposeProtocol extends FipaProposeProtocol {
 	on AclMessage [!hasFailed] {
 		switch (occurrence.performative) {
 			case Performative::PROPOSE: {
-				val data = getPropose
-				if (data === null) {
+				val dt = getPropose
+				val st = state
+				if (st == ProposeProtocolState::NOT_STARTED && dt === null) {
 					val wlock = this.lock.writeLock
 					wlock.lock
 					try {

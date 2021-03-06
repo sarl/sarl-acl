@@ -90,7 +90,7 @@ behavior InitiatorSarlPingPongProtocol extends SarlPingPongProtocol {
 		}
 		val part = this.participant
 		if (part === null) {
-			reportError("Unspecified participant identifier")
+			reportError(Messages::InitiatorSarlPingPongProtocol_0)
 		} else {
 			val rlock = this.lock.readLock
 			rlock.lock
@@ -115,13 +115,13 @@ behavior InitiatorSarlPingPongProtocol extends SarlPingPongProtocol {
 							descriptionParameters?.get('encoding'),
 							part)
 					} else {
-						reportError(MessageFormat::format("Cannot send a sarl-ping message in state {0}", state.name))
+						reportError(MessageFormat::format(Messages::InitiatorSarlPingPongProtocol_1, state.name))
 					}
 				} finally {
 					wlock.unlock
 				}
 			} else {
-				reportError(MessageFormat::format("Cannot send a sarl-ping message in state {0}", state.name))
+				reportError(MessageFormat::format(Messages::InitiatorSarlPingPongProtocol_1, state.name))
 			}
 		}
 	}
@@ -165,7 +165,7 @@ behavior InitiatorSarlPingPongProtocol extends SarlPingPongProtocol {
 				}
 			}
 		} else {
-			reportError(MessageFormat::format("Cannot handle a participant message {0} in state {1}",
+			reportError(MessageFormat::format(Messages::InitiatorSarlPingPongProtocol_2,
 				occurrence.performative.name,
 				st.name))
 		}

@@ -246,8 +246,9 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 	on AclMessage [!hasFailed] {
 		switch (occurrence.performative) {
 			case Performative::REQUEST: {
-				val data = getRequest
-				if (data === null) {
+				val dt = getRequest
+				val st = state
+				if (st == RequestProtocolState::NOT_STARTED && dt === null) {
 					val wlock = this.lock.writeLock
 					wlock.lock
 					try {

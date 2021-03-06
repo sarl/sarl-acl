@@ -29,6 +29,8 @@ import io.sarl.acl.protocol.request.InitiatorFipaRequestProtocol
 import io.sarl.acl.protocol.request.ParticipantFipaRequestProtocol
 import io.sarl.lang.core.Agent
 import java.util.UUID
+import io.sarl.acl.protocol.query.ParticipantFipaQueryProtocol
+import io.sarl.acl.protocol.query.InitiatorFipaQueryProtocol
 
 /** 
  * Factory of a ACL protocol.
@@ -55,6 +57,9 @@ class DefaultAclProtocolFactory implements AclProtocolFactory {
 			case FIPA_REQUEST: {
 				return new ParticipantFipaRequestProtocol(owner) => [ it.conversationId = conversationId ]
 			}
+			case FIPA_QUERY: {
+				return new ParticipantFipaQueryProtocol(owner) => [ it.conversationId = conversationId ]
+			}
 			default: {
 				throw new IllegalArgumentException
 			}
@@ -74,6 +79,9 @@ class DefaultAclProtocolFactory implements AclProtocolFactory {
 			}
 			case FIPA_REQUEST: {
 				return new InitiatorFipaRequestProtocol(owner)
+			}
+			case FIPA_QUERY: {
+				return new InitiatorFipaQueryProtocol(owner)
 			}
 			default: {
 				throw new IllegalArgumentException

@@ -80,7 +80,7 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 		} finally {
 			rlock.unlock
 		}
-		reportError("Cannot proceed two ping-pong queries in the same conversation")
+		reportError(Messages::ParticipantSarlPingPongProtocol_0)
 		return null
 	}
 
@@ -113,13 +113,13 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 						this.initiator
 					)
 				} else {
-					reportError(MessageFormat::format("Pong cannot be sent in the state {0}", state.name))			
+					reportError(MessageFormat::format(Messages::ParticipantSarlPingPongProtocol_1, state.name))			
 				}
 			} finally {
 				wlock.unlock
 			}
 		} else {
-			reportError(MessageFormat::format("Pong cannot be sent in the state {0}", state.name))			
+			reportError(MessageFormat::format(Messages::ParticipantSarlPingPongProtocol_1, state.name))			
 		}
 	}
 
@@ -127,8 +127,9 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 	on AclMessage [!hasFailed] {
 		switch (occurrence.performative) {
 			case Performative::PROPOSE: {
-				val data = getPing
-				if (data === null) {
+				val dt = getPing
+				val st = state
+				if (st == PingPongProtocolState::NOT_STARTED && dt === null) {
 					val wlock = this.lock.writeLock
 					wlock.lock
 					try {
@@ -141,7 +142,7 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 						wlock.unlock
 					}
 				} else {
-					reportError("Cannot proceed two ping-pong queries in the same conversation")
+					reportError(Messages::ParticipantSarlPingPongProtocol_0)
 				}
 			}
 			default: {

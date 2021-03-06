@@ -26,6 +26,7 @@ import io.sarl.acl.message.Performative
 import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.protocol.ProtocolState
 import java.text.MessageFormat
+import java.util.Map
 
 /**
  * Participant side of the Propose Interaction protocol.
@@ -61,9 +62,11 @@ behavior ParticipantFipaProposeProtocol extends FipaProposeProtocol {
 	 * are null and void.
 	 * 
 	 * @param reason the reason of the cancel.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def notUnderstood(reason : Object = null) {
-		notUnderstoodProtocol(reason)
+	def notUnderstood(reason : Object = null, reasonParameters : Map<String, String> = null) {
+		notUnderstoodProtocol(reason, reasonParameters)
 	}
 
 	/** Replies the proposal.
@@ -86,8 +89,10 @@ behavior ParticipantFipaProposeProtocol extends FipaProposeProtocol {
 	/** Accept a propose.
 	 * 
 	 * @param agreementInformation any useful agreement information to provide to the initiator.
+	 * @param informationParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def accept(agreementInformation : Object = null) {
+	def accept(agreementInformation : Object = null, informationParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -103,7 +108,11 @@ behavior ParticipantFipaProposeProtocol extends FipaProposeProtocol {
 				st = this.state
 				if (st == ProposeProtocolState::BUILDING_ANSWER) {
 					ProposeProtocolState::ACCEPT_PROPOSE.finish(null)
-					sendMessage(agreementInformation, Performative::ACCEPT_PROPOSAL, this.initiator)
+					sendMessage(agreementInformation, Performative::ACCEPT_PROPOSAL,
+						informationParameters?.get('language'),
+						informationParameters?.get('ontology'),
+						informationParameters?.get('encoding'),
+						this.initiator)
 				} else {
 					reportError(MessageFormat::format(Messages::ParticipantFipaProposeProtocol_2, state.name))			
 				}
@@ -118,8 +127,10 @@ behavior ParticipantFipaProposeProtocol extends FipaProposeProtocol {
 	/** Reject a propose.
 	 * 
 	 * @param disagreementInformation any useful agreement information to provide to the initiator.
+	 * @param informationParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def reject(disagreementInformation : Object = null) {
+	def reject(disagreementInformation : Object = null, informationParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -135,7 +146,11 @@ behavior ParticipantFipaProposeProtocol extends FipaProposeProtocol {
 				st = this.state
 				if (st == ProposeProtocolState::BUILDING_ANSWER) {
 					ProposeProtocolState::REJECT_PROPOSE.finish(null)
-					sendMessage(disagreementInformation, Performative::REJECT_PROPOSAL, this.initiator)
+					sendMessage(disagreementInformation, Performative::REJECT_PROPOSAL,
+						informationParameters?.get('language'),
+						informationParameters?.get('ontology'),
+						informationParameters?.get('encoding'),
+						this.initiator)
 				} else {
 					reportError(MessageFormat::format(Messages::ParticipantFipaProposeProtocol_3, state.name))			
 				}

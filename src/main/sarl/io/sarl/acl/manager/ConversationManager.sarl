@@ -57,11 +57,12 @@ capacity ConversationManager {
 	 * }</pre>
 	 *
 	 * @param protocolType is the protocol type
+	 * @param conversationId is the identifier of the conversation.
 	 * @param expectedType is the expected type for the replied protocol.
 	 * @param name conversation name.
 	 * @return the protocol created or {@code null} if no protocol could be created.
 	 */
-	def createConversationAsParticipant(protocolType : AclProtocolId, expectedType : Class<T> = null, name : String = null) : T with T extends AclProtocol
+	def createConversationAsParticipant(protocolType : AclProtocolId, conversationId : UUID, expectedType : Class<T> = null, name : String = null) : T with T extends AclProtocol
 
 	/** 
 	 * Creates a protocol as the participant.
@@ -75,11 +76,12 @@ capacity ConversationManager {
 	 * }</pre>
 	 *
 	 * @param protocolType is the protocol type.
+	 * @param conversationId is the identifier of the conversation.
 	 * @param expectedType is the expected type for the replied protocol.
 	 * @param name conversation name.
 	 * @return the protocol created or {@code null} if no protocol could be created.
 	 */
-	def createConversationAsParticipant(protocolType : String, expectedType : Class<T> = null, name : String = null) : T with T extends AclProtocol
+	def createConversationAsParticipant(protocolType : String, conversationId : UUID, expectedType : Class<T> = null, name : String = null) : T with T extends AclProtocol
 
 	/** 
 	 * Creates a protocol as the initiator.

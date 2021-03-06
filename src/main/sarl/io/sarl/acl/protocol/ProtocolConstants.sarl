@@ -36,6 +36,6 @@ final class ProtocolConstants {
 	}
 
 	/** Default time out in seconds. */
-	public static val DEFAULT_TIMEOUT = 60.0
+	public static val DEFAULT_TIMEOUT = 900.0
 
 }

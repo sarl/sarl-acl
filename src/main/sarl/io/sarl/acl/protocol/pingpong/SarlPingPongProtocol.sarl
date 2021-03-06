@@ -21,10 +21,10 @@
 
 package io.sarl.acl.protocol.pingpong
 
+import io.sarl.acl.protocol.AclProtocolId
 import io.sarl.acl.protocol.OneToOneAclProtocol
 import io.sarl.acl.protocol.ProtocolState
 import io.sarl.lang.core.Agent
-import io.sarl.acl.protocol.AclProtocolId
 
 /**
  * SARL Ping-Pong Interaction protocol.

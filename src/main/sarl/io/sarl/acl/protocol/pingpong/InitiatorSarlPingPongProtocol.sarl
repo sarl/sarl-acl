@@ -27,6 +27,7 @@ import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.protocol.ProtocolState
 import java.text.MessageFormat
 import java.util.UUID
+import java.util.Map
 
 /**
  * Initiator side of the Ping-Pong Interaction protocol.
@@ -66,9 +67,11 @@ behavior InitiatorSarlPingPongProtocol extends SarlPingPongProtocol {
 	 * the Participant.
 	 * 
 	 * @param reason the reason of the cancel.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def cancel(reason : Object = null) {
-		cancelProtocol(reason, null)
+	def cancel(reason : Object = null, reasonParameters : Map<String,String> = null) {
+		cancelProtocol(reason, reasonParameters, null)
 	}
 
 	/**
@@ -77,9 +80,11 @@ behavior InitiatorSarlPingPongProtocol extends SarlPingPongProtocol {
 	 * 
 	 * @param participant the participant to request to.
 	 * @param pingDescription the content of the message.
+	 * @param descriptionParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	def ping(participant : UUID = null, pingDescription : Object) {
+	def ping(participant : UUID = null, pingDescription : Object, descriptionParameters : Map<String, String> = null) {
 		if (participant !== null) {
 			participant.initiateAsInitiator
 		}
@@ -104,7 +109,11 @@ behavior InitiatorSarlPingPongProtocol extends SarlPingPongProtocol {
 						this.resultData = null
 						startTimeoutNotifier
 						PingPongProtocolState::WAITING_ANSWER.change(null)
-						sendMessage(pingDescription, Performative::PROPOSE, part)
+						sendMessage(pingDescription, Performative::PROPOSE,
+							descriptionParameters?.get('language'),
+							descriptionParameters?.get('ontology'),
+							descriptionParameters?.get('encoding'),
+							part)
 					} else {
 						reportError(MessageFormat::format("Cannot send a sarl-ping message in state {0}", state.name))
 					}

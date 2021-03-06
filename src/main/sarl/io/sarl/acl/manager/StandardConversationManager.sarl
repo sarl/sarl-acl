@@ -171,7 +171,7 @@ skill StandardConversationManager implements ConversationManager {
 				listener.timeoutReached(protocol)
 			}
 		}
-		if (this.fireEventsIntoAgent) {
+		if (this.fireEventsIntoAgent && ^event !== null) {
 			^event.fireEventInAgentContext
 		}
 	}
@@ -219,7 +219,7 @@ skill StandardConversationManager implements ConversationManager {
 				listener.protocolFinished(protocol, ^event)
 			}
 		}
-		if (this.fireEventsIntoAgent) {
+		if (this.fireEventsIntoAgent && ^event !== null) {
 			^event.fireEventInAgentContext
 		}
 	}
@@ -267,7 +267,7 @@ skill StandardConversationManager implements ConversationManager {
 				listener.protocolChanged(protocol, ^event)
 			}
 		}
-		if (this.fireEventsIntoAgent) {
+		if (this.fireEventsIntoAgent && ^event !== null) {
 			^event.fireEventInAgentContext
 		}
 	}
@@ -453,10 +453,10 @@ skill StandardConversationManager implements ConversationManager {
 		}
 	}
 
-	override createConversationAsParticipant(protocolType : AclProtocolId, expectedType : Class<T>, name : String) : T with T extends AclProtocol {
+	override createConversationAsParticipant(protocolType : AclProtocolId, conversationId : UUID, expectedType : Class<T>, name : String) : T with T extends AclProtocol {
 		if (protocolType !== null) {
 			try {
-				val protocol = this.aclProtocolFactory.newProtocolAsParticipant(this.owner, protocolType)
+				val protocol = this.aclProtocolFactory.newProtocolAsParticipant(this.owner, protocolType, conversationId)
 				if (protocol !== null) {
 					protocol.name = name
 					protocol.register
@@ -472,11 +472,11 @@ skill StandardConversationManager implements ConversationManager {
 		return null
 	}
 	
-	override createConversationAsParticipant(protocolType : String, expectedType : Class<T>, name : String) : T with T extends AclProtocol {
+	override createConversationAsParticipant(protocolType : String, conversationId : UUID, expectedType : Class<T>, name : String) : T with T extends AclProtocol {
 		if (!protocolType.isNullOrEmpty) {
 			try {
 				val type = AclProtocolId::valueOfCaseInsensitive(protocolType)
-				return createConversationAsParticipant(type, expectedType, name)
+				return createConversationAsParticipant(type, conversationId, expectedType, name)
 			} catch (ex : Throwable) {
 				//
 			}

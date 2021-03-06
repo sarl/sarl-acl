@@ -65,7 +65,6 @@ abstract behavior OneToOneAclProtocol extends AclProtocol {
 		} else {
 			this.initiator = owner.ID
 			this.participant = participant
-			this.conversationId = UUID::randomUUID
 		}
 	}
 

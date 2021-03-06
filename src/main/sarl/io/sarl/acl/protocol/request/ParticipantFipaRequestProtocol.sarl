@@ -26,6 +26,7 @@ import io.sarl.acl.message.Performative
 import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.protocol.ProtocolState
 import java.text.MessageFormat
+import java.util.Map
 
 /** 
  * Participant side for the Request interaction protocol.
@@ -60,9 +61,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 	 * are null and void.
 	 * 
 	 * @param reason the reason of the cancel.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def notUnderstood(reason : Object = null) {
-		notUnderstoodProtocol(reason)
+	def notUnderstood(reason : Object = null, reaonParameters : Map<String, String> = null) {
+		notUnderstoodProtocol(reason, reaonParameters)
 	}
 
 	/** Replies the request.
@@ -84,9 +87,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 
 	/** Refuse a request.
 	 *
-	 * @param reason the reason to refuse
+	 * @param reason the reason to refuse.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def refuse(reason : Object = null) {
+	def refuse(reason : Object = null, reasonParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -102,7 +107,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 				st = this.state
 				if (st == RequestProtocolState::WAITING_PARTICIPANT_DECISION) {
 					RequestProtocolState::PARTICIPANT_REFUSED.finish(null)
-					sendMessage(reason, Performative::REFUSE, this.initiator)
+					sendMessage(reason, Performative::REFUSE,
+						reasonParameters?.get('language'),
+						reasonParameters?.get('ontology'),
+						reasonParameters?.get('encoding'),
+						this.initiator)
 				} else {
 					reportError(MessageFormat::format(Messages::ParticipantFipaRequestProtocol_1, state.name))			
 				}
@@ -117,8 +126,10 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 	/** Accept a request, and start to do the associated job.
 	 * 
 	 * @param agreementInformation any useful agreement information to provide to the initiator.
+	 * @param informationParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def agree(agreementInformation : Object = null) {
+	def agree(agreementInformation : Object = null, informationParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -134,7 +145,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 				st = this.state
 				if (st == RequestProtocolState::WAITING_PARTICIPANT_DECISION) {
 					RequestProtocolState::PARTICIPANT_AGREED.change(null)
-					sendMessage(agreementInformation, Performative::AGREE, this.initiator)
+					sendMessage(agreementInformation, Performative::AGREE,
+						informationParameters?.get('language'),
+						informationParameters?.get('ontology'),
+						informationParameters?.get('encoding'),
+						this.initiator)
 				} else {
 					reportError(MessageFormat::format(Messages::ParticipantFipaRequestProtocol_2, state.name))			
 				}
@@ -149,9 +164,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 	/** Indicates that a failure occurred during the request treatment.
 	 * 
 	 * @param reason the reason of the failure.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	def failure(reason : Object = null) {
+	def failure(reason : Object = null, reasonParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -168,7 +185,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 				if (st == RequestProtocolState::PARTICIPANT_AGREED) {
 					this.requestData = null
 					RequestProtocolState::PARTICIPANT_FAILURE.finish(null)
-					sendMessage(reason, Performative::FAILURE, this.initiator)
+					sendMessage(reason, Performative::FAILURE,
+						reasonParameters?.get('language'),
+						reasonParameters?.get('ontology'),
+						reasonParameters?.get('encoding'),
+						this.initiator)
 				} else {
 					reportError(MessageFormat::format(Messages::ParticipantFipaRequestProtocol_3, state.name))			
 				}
@@ -183,9 +204,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 	/** Indicates that a request treatment is finished.
 	 * 
 	 * @param result the result of the request.
+	 * @param resultParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	def done(result : Object = null) {
+	def done(result : Object = null, resultParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -203,7 +226,11 @@ behavior ParticipantFipaRequestProtocol extends FipaRequestProtocol {
 					this.requestData = null
 					(if (result === null) RequestProtocolState::DONE_WITHOUT_RESULT
 						else RequestProtocolState::DONE_WITH_RESULT).finish(null)
-					sendMessage(result, Performative::INFORM, this.initiator)
+					sendMessage(result, Performative::INFORM,
+						resultParameters?.get('language'),
+						resultParameters?.get('ontology'),
+						resultParameters?.get('encoding'),
+						this.initiator)
 				} else {
 					reportError(MessageFormat::format(Messages::ParticipantFipaRequestProtocol_4, state.name))			
 				}

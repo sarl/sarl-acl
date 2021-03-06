@@ -27,6 +27,7 @@ import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.protocol.ProtocolState
 import java.text.MessageFormat
 import java.util.UUID
+import java.util.Map
 
 /**
  * Initiator side of the Propose Interaction protocol.
@@ -68,9 +69,11 @@ behavior InitiatorFipaProposeProtocol extends FipaProposeProtocol {
 	 * the Participant.
 	 * 
 	 * @param reason the reason of the cancel.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def cancel(reason : Object = null) {
-		cancelProtocol(reason, null)
+	def cancel(reason : Object = null, reasonParameters : Map<String, String> = null) {
+		cancelProtocol(reason, reasonParameters, null)
 	}
 
 	/**
@@ -80,9 +83,11 @@ behavior InitiatorFipaProposeProtocol extends FipaProposeProtocol {
 	 * 
 	 * @param participant the participant to request to.
 	 * @param proposeDescription the content of the proposal.
+	 * @param descriptionParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	def propose(participant : UUID = null, proposeDescription : Object) {
+	def propose(participant : UUID = null, proposeDescription : Object, descriptionParameters : Map<String, String> = null) {
 		if (participant !== null) {
 			participant.initiateAsInitiator
 		}
@@ -107,7 +112,11 @@ behavior InitiatorFipaProposeProtocol extends FipaProposeProtocol {
 						this.resultData = null
 						startTimeoutNotifier
 						ProposeProtocolState::WAITING_ANSWER.change(null)
-						sendMessage(proposeDescription, Performative::PROPOSE, part)
+						sendMessage(proposeDescription, Performative::PROPOSE,
+							descriptionParameters?.get('language'),
+							descriptionParameters?.get('ontology'),
+							descriptionParameters?.get('encoding'),
+							part)
 					} else {
 						reportError(MessageFormat::format(Messages::InitiatorFipaProposeProtocol_0, state.name))
 					}

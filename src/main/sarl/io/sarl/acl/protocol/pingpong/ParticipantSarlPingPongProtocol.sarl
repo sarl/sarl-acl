@@ -26,6 +26,7 @@ import io.sarl.acl.message.Performative
 import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.protocol.ProtocolState
 import java.text.MessageFormat
+import java.util.Map
 
 /**
  * Participant side of the Ping-Pong Interaction protocol.
@@ -59,9 +60,11 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 	 * are null and void.
 	 * 
 	 * @param reason the reason of the cancel.
+	 * @param reaonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def notUnderstood(reason : Object = null) {
-		notUnderstoodProtocol(reason)
+	def notUnderstood(reason : Object = null, reasonParameters : Map<String, String> = null) {
+		notUnderstoodProtocol(reason, reasonParameters)
 	}
 
 	/** Replies the ping data.
@@ -84,8 +87,10 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 	/** Send the sarl-pong.
 	 * 
 	 * @param pongInformation any useful information to provide to the initiator.
+	 * @param informationParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
-	def pong(pongInformation : Object = null) {
+	def pong(pongInformation : Object = null, informationParameters : Map<String, String> = null) {
 		val rlock = this.lock.readLock
 		rlock.lock
 		var st : ProtocolState
@@ -101,7 +106,12 @@ behavior ParticipantSarlPingPongProtocol extends SarlPingPongProtocol {
 				st = this.state
 				if (st == PingPongProtocolState::BUILDING_ANSWER) {
 					PingPongProtocolState::PONG_SENT.finish(null)
-					sendMessage(pongInformation, Performative::AGREE, this.initiator)
+					sendMessage(pongInformation, Performative::AGREE,
+						informationParameters?.get('language'),
+						informationParameters?.get('ontology'),
+						informationParameters?.get('encoding'),
+						this.initiator
+					)
 				} else {
 					reportError(MessageFormat::format("Pong cannot be sent in the state {0}", state.name))			
 				}

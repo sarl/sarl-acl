@@ -104,7 +104,7 @@ class StandardConversationManagerBehaviorTest {
 		typeof(UnhandledAclMessage).assertInstanceOf(evt0)
 		val evt1 = evt0 as UnhandledAclMessage
 		expected.assertSame(evt1.unhandledMessage)
-		this.manager.verify(never).createConversationAsParticipant(anyString)
+		this.manager.verify(never).createConversationAsParticipant(anyString, typeof(UUID).any)
 	}
 
 	@Test
@@ -113,11 +113,12 @@ class StandardConversationManagerBehaviorTest {
 		when(this.manager.participantSideAutoCreation).thenReturn(true)
 		val newConv = typeof(AclProtocol).mock
 		when(newConv.aclProtocolId).thenReturn(AclProtocolId::NONE)
-		when(this.manager.createConversationAsParticipant(anyString)).thenReturn(newConv)
+		when(this.manager.createConversationAsParticipant(anyString, typeof(UUID).any)).thenReturn(newConv)
 		//
 		val expected = new AclMessage(Performative::NONE)
 		expected.protocol = AclProtocolId::NONE.code
-		expected.conversationId = UUID::randomUUID
+		val expectedCid = UUID::randomUUID
+		expected.conversationId = expectedCid
 		expected.fireEvent
 		//
 		1.assertEquals(this.behaviors.events.size)
@@ -125,8 +126,10 @@ class StandardConversationManagerBehaviorTest {
 		typeof(AclMessage).assertInstanceOf(evt0)
 		expected.assertSame(evt0)
 		val capture0 = typeof(String).forClass
-		this.manager.verify(1.times).createConversationAsParticipant(capture0.capture)
+		val capture1 = typeof(UUID).forClass
+		this.manager.verify(1.times).createConversationAsParticipant(capture0.capture, capture1.capture)
 		AclProtocolId::NONE.code.assertEquals(capture0.value)
+		expectedCid.assertEquals(capture1.value)
 	}
 
 	@Test

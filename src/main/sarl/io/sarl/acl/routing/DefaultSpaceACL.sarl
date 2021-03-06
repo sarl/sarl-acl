@@ -41,6 +41,19 @@ skill DefaultSpaceACL implements ACL {
 
 	override sendAclMessageTo(message : AclMessage, agents : UUID*) {
 		if (message !== null) {
+			val me = owner.ID
+
+			// Force the fields of the messages that are related to the sender.
+			val cnt = message.content
+			cnt.sender = me
+			if (cnt.replyTo.nullOrEmpty) {
+				cnt.replyTo = #[me]
+			}
+			val env = message.envelope
+			env.from = me
+			env.to = agents
+	
+			// Send the message
 			if (agents.length > 1) {
 				val set = <UUID>newTreeSet(null)
 				set.addAll(agents)

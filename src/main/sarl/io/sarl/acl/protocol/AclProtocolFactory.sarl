@@ -23,6 +23,7 @@ package io.sarl.acl.protocol
 
 import com.google.inject.ImplementedBy
 import io.sarl.lang.core.Agent
+import java.util.UUID
 
 /** 
  * Factory of an ACL protocol
@@ -37,7 +38,7 @@ import io.sarl.lang.core.Agent
 interface AclProtocolFactory {
 
 	/** Create an instance of a protocol of the given type as participant. */
-	def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId) : AclProtocol
+	def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, conversationId : UUID) : AclProtocol
 
 	/** Create an instance of a protocol of the given type as initiator. */
 	def newProtocolAsInitiator(owner : Agent, protocolType : AclProtocolId) : AclProtocol

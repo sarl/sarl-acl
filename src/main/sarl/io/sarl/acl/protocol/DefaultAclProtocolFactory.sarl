@@ -21,13 +21,14 @@
 
 package io.sarl.acl.protocol
 
+import io.sarl.acl.protocol.pingpong.InitiatorSarlPingPongProtocol
+import io.sarl.acl.protocol.pingpong.ParticipantSarlPingPongProtocol
 import io.sarl.acl.protocol.propose.InitiatorFipaProposeProtocol
 import io.sarl.acl.protocol.propose.ParticipantFipaProposeProtocol
 import io.sarl.acl.protocol.request.InitiatorFipaRequestProtocol
 import io.sarl.acl.protocol.request.ParticipantFipaRequestProtocol
 import io.sarl.lang.core.Agent
-import io.sarl.acl.protocol.pingpong.ParticipantSarlPingPongProtocol
-import io.sarl.acl.protocol.pingpong.InitiatorSarlPingPongProtocol
+import java.util.UUID
 
 /** 
  * Factory of a ACL protocol.
@@ -40,19 +41,19 @@ import io.sarl.acl.protocol.pingpong.InitiatorSarlPingPongProtocol
  */
 class DefaultAclProtocolFactory implements AclProtocolFactory {
 
-	override newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
+	override newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, conversationId : UUID) : AclProtocol {
 		switch (protocolType) {
 			case NONE: {
 				return null
 			}
 			case SARL_PINGPONG: {
-				return new ParticipantSarlPingPongProtocol(owner)
+				return new ParticipantSarlPingPongProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			case FIPA_PROPOSE: {
-				return new ParticipantFipaProposeProtocol(owner)
+				return new ParticipantFipaProposeProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			case FIPA_REQUEST: {
-				return new ParticipantFipaRequestProtocol(owner)
+				return new ParticipantFipaRequestProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			default: {
 				throw new IllegalArgumentException

@@ -59,7 +59,7 @@ behavior StandardConversationManagerBehavior {
 				return conversation
 			}
 		} else if (cm.participantSideAutoCreation) {
-			return cm.createConversationAsParticipant(protocol)
+			return cm.createConversationAsParticipant(protocol, id)
 		}
 		return null
 	}

@@ -312,7 +312,7 @@ class StandardConversationManagerTest {
 	@Test
 	@DisplayName("createConversationAsParticipant(null as AclProtocolId)")
 	def createConversationAsParticipantAclProtocolId_null : void {
-		val protocol = this.^skill.createConversationAsParticipant(null as AclProtocolId)
+		val protocol = this.^skill.createConversationAsParticipant(null as AclProtocolId, UUID::randomUUID)
 		protocol.assertNull
 		assertListeners(#{})
 	}
@@ -323,7 +323,7 @@ class StandardConversationManagerTest {
 		val expected = typeof(AclProtocol).mock
 		when(expected.conversationId).thenReturn(UUID::randomUUID)
 		this.^skill.aclProtocolFactory = new AclProtocolFactory {
-			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
+			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, cId : UUID) : AclProtocol {
 				AclProtocolId::FIPA_PROPOSE.assertSame(protocolType)
 				return expected
 			}	
@@ -332,7 +332,7 @@ class StandardConversationManagerTest {
 			}
 		}
 		this.listener.reset
-		val protocol = this.^skill.createConversationAsParticipant(AclProtocolId::FIPA_PROPOSE)
+		val protocol = this.^skill.createConversationAsParticipant(AclProtocolId::FIPA_PROPOSE, UUID::randomUUID)
 		expected.assertSame(protocol)
 		assertListeners(#{'added' -> #[expected]})
 	}
@@ -340,7 +340,7 @@ class StandardConversationManagerTest {
 	@Test
 	@DisplayName("createConversationAsParticipant(null as String)")
 	def createConversationAsParticipantString_null : void {
-		val protocol = this.^skill.createConversationAsParticipant(null as String)
+		val protocol = this.^skill.createConversationAsParticipant(null as String, UUID::randomUUID)
 		protocol.assertNull
 		assertListeners(#{})
 	}
@@ -348,7 +348,7 @@ class StandardConversationManagerTest {
 	@Test
 	@DisplayName("createConversationAsParticipant(\"\")")
 	def createConversationAsParticipantString_empty : void {
-		val protocol = this.^skill.createConversationAsParticipant("")
+		val protocol = this.^skill.createConversationAsParticipant("", UUID::randomUUID)
 		protocol.assertNull
 		assertListeners(#{})
 	}
@@ -356,7 +356,7 @@ class StandardConversationManagerTest {
 	@Test
 	@DisplayName("createConversationAsParticipant(invalid name)")
 	def createConversationAsParticipantString_invalidName : void {
-		val protocol = this.^skill.createConversationAsParticipant("xyz")
+		val protocol = this.^skill.createConversationAsParticipant("xyz", UUID::randomUUID)
 		protocol.assertNull
 		assertListeners(#{})
 	}
@@ -367,7 +367,7 @@ class StandardConversationManagerTest {
 		val expected = typeof(AclProtocol).mock
 		when(expected.conversationId).thenReturn(UUID::randomUUID)
 		this.^skill.aclProtocolFactory = new AclProtocolFactory {
-			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
+			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, cId : UUID) : AclProtocol {
 				AclProtocolId::FIPA_PROPOSE.assertSame(protocolType)
 				return expected
 			}	
@@ -376,7 +376,7 @@ class StandardConversationManagerTest {
 			}
 		}
 		this.listener.reset
-		val protocol = this.^skill.createConversationAsParticipant(AclProtocolId::FIPA_PROPOSE.name)
+		val protocol = this.^skill.createConversationAsParticipant(AclProtocolId::FIPA_PROPOSE.name, UUID::randomUUID)
 		expected.assertSame(protocol)
 		assertListeners(#{'added' -> #[expected]})
 	}
@@ -395,7 +395,7 @@ class StandardConversationManagerTest {
 		val expected = typeof(AclProtocol).mock
 		when(expected.conversationId).thenReturn(UUID::randomUUID)
 		this.^skill.aclProtocolFactory = new AclProtocolFactory {
-			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
+			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, cId : UUID) : AclProtocol {
 				throw new UnsupportedOperationException
 			}	
 			def newProtocolAsInitiator(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
@@ -439,7 +439,7 @@ class StandardConversationManagerTest {
 		val expected = typeof(AclProtocol).mock
 		when(expected.conversationId).thenReturn(UUID::randomUUID)
 		this.^skill.aclProtocolFactory = new AclProtocolFactory {
-			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
+			def newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, cId : UUID) : AclProtocol {
 				throw new UnsupportedOperationException
 			}	
 			def newProtocolAsInitiator(owner : Agent, protocolType : AclProtocolId) : AclProtocol {

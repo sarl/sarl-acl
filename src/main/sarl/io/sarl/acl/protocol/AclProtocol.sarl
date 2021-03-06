@@ -33,8 +33,10 @@ import io.sarl.lang.core.Agent
 import io.sarl.util.ConcurrentCollection
 import io.sarl.util.ConcurrentCollectionLinkedDeque
 import java.lang.ref.WeakReference
+import java.nio.charset.Charset
 import java.text.MessageFormat
 import java.util.Collection
+import java.util.Map
 import java.util.Objects
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -258,8 +260,59 @@ abstract behavior AclProtocol {
 	protected var conversationId : UUID
 
 	/**
+	 * Enable the timeout feature of the protocol.
+	 */
+	var enableTimeout : boolean = true
+
+	/**
+	 * Replies the enabling state of the timeout feature of the protocol.
+	 * Any change in this enabling state is taken into account when:
+	 * <ul>
+	 * <li>the timeout notifier should be started;</li>
+	 * <li>the state passes to disable, then the notifier is stopped.</li>
+	 * </ul>
+	 *
+	 * @return {@code true} if the timeout is enable, {@code false}.
+	 */
+	@SuppressWarnings("potential_field_synchronization_problem")
+	def getTimeoutEnable : boolean {
+		val rlock = this.lock.readLock
+		rlock.lock
+		try {
+			return this.enableTimeout
+		} finally {
+			rlock.unlock
+		}
+	}
+
+	/**
+	 * Change the enabling state of the timeout feature of the protocol.
+	 * Any change in this enabling state is taken into account when:
+	 * <ul>
+	 * <li>the timeout notifier should be started;</li>
+	 * <li>the state passes to disable, then the notifier is stopped.</li>
+	 * </ul>
+	 *
+	 * @param enable {@code true} if the timeout is enable, {@code false}.
+	 */
+	@SuppressWarnings("potential_field_synchronization_problem")
+	def setTimeoutEnable(enable : boolean) {
+		val wlock = this.lock.writeLock
+		wlock.lock
+		try {
+			this.enableTimeout = enable
+			if (!this.enableTimeout) {
+				resetTimeoutNotifier
+			}
+		} finally {
+			wlock.unlock
+		}
+	}
+
+	/**
 	 * Return the unique identifier used to identify the conversation and transmitted into the ACL Messages.
 	 */
+	@SuppressWarnings("potential_field_synchronization_problem")
 	def getConversationId : UUID {
 		val rlock = this.lock.readLock
 		rlock.lock
@@ -343,6 +396,7 @@ abstract behavior AclProtocol {
 	new (ag : Agent, initiator : UUID = null) {
 		super(ag)
 		this.initiator = initiator
+		this.conversationId = UUID::randomUUID
 	}
 
 	override toString(builder : ToStringBuilder) {
@@ -460,10 +514,11 @@ abstract behavior AclProtocol {
 	 * the Participant.
 	 * 
 	 * @param reason the reason of the cancel.
-	 * @param event is the event to provide to the listener.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	protected def cancelProtocol(reason : Object, ^event : AbstractAclProtocolEvent) {
+	protected def cancelProtocol(reason : Object, reasonParameters : Map<String, String>, ^event : AbstractAclProtocolEvent) {
 		if (isInitiatorSide && isStarted) {
 			val rlock = this.lock.readLock
 			rlock.lock
@@ -481,7 +536,11 @@ abstract behavior AclProtocol {
 					if (!st.isErrorneous && !st.isFinished && !st.isBrokenProtocol && !st.isCancelled) {
 						onCancelled
 						finish(cancelledState, ^event)
-						sendMessage(reason, Performative::CANCEL, participants)
+						sendMessage(reason, Performative::CANCEL,
+							reasonParameters?.get('language'),
+							reasonParameters?.get('ontology'),
+							reasonParameters?.get('encoding'),
+							participants)
 					} else {
 						reportError(MessageFormat::format(Messages::AclProtocol_6, state.name))
 					}
@@ -507,9 +566,11 @@ abstract behavior AclProtocol {
 	 * are null and void.
 	 * 
 	 * @param reason the reason of the cancel.
+	 * @param reasonParameters is the map that contains the {@code language} used for expressing the given content;
+	 *     the {@code ontology} associated to the given content; and the {@code encoding} of the message content.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	protected def notUnderstoodProtocol(reason : Object) {
+	protected def notUnderstoodProtocol(reason : Object, reasonParameters : Map<String, String>) {
 		if (isParticipantSide && isStarted) {
 			val rlock = this.lock.readLock
 			rlock.lock
@@ -526,7 +587,11 @@ abstract behavior AclProtocol {
 					st = this.state
 					if (!st.isErrorneous && !st.isFinished && !st.isBrokenProtocol && !st.isCancelled) {
 						reportError(MessageFormat::format(Messages::AclProtocol_8, Objects::toString(reason)))
-						sendMessage(reason, Performative::NOT_UNDERSTOOD, this.initiator)
+						sendMessage(reason, Performative::NOT_UNDERSTOOD,
+							reasonParameters?.get('language'),
+							reasonParameters?.get('ontology'),
+							reasonParameters?.get('encoding'),
+							this.initiator)
 					} else {
 						reportError(MessageFormat::format(Messages::AclProtocol_7, state.name))
 					}
@@ -584,7 +649,7 @@ abstract behavior AclProtocol {
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
 	protected def startTimeoutNotifier {
-		if (Double::isNaN(this.startingTime)) {
+		if (Double::isNaN(this.startingTime) && this.enableTimeout) {
 			this.startingTime = getTime
 			createTimeoutNotifier
 		}
@@ -609,7 +674,9 @@ abstract behavior AclProtocol {
 	private def resetTimeoutNotifier {
 		if (this.timeoutTask !== null) {
 			this.timeoutTask.cancel
-			createTimeoutNotifier
+			if (this.enableTimeout) {
+				createTimeoutNotifier
+			}
 		}
 	}
 
@@ -660,14 +727,34 @@ abstract behavior AclProtocol {
 	 *
 	 * @param content the content of the message.
 	 * @param performative the performative.
+	 * @param language the language used for expressing the given content
+	 * @param ontology the ontology associated to the given content.
+	 * @param encoding the encoding of the message content.
 	 * @param to the destination.
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
-	protected final def sendMessage(content : Object, performative : Performative, to : UUID*) {
+	protected final def sendMessage(content : Object, performative : Performative,
+		language : String, ontology : String, encoding : String = null, to : UUID*) {
 		var message = new AclMessage(performative, content)
 		message.protocol = getAclProtocolId.code
-		message.conversationId = this.conversationId		
+		message.conversationId = this.conversationId
+		message.language = language
+		message.ontology = ontology
+		message.encoding = if (encoding === null) Charset::defaultCharset.displayName else encoding
 		message.sendAclMessageTo(to)
+	}
+
+	/** Convert this ACL protocol to the given type if it is possible.
+	 *
+	 * @return {@code this} if it is of the given type, otherwise {@code null}.
+	 */
+	@Pure
+	final def to(targetType : Class<T>) : T with T extends AclProtocol {
+		try {
+			return targetType.cast(this)
+		} catch (ex : Throwable) {
+			return null
+		}
 	}
 
 }

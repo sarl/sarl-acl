@@ -71,12 +71,14 @@ class DefaultAclProtocolFactoryTest {
 	@ParameterizedTest
 	@EnumSource(typeof(AclProtocolId))
 	def newProtocolAsParticipant(id : AclProtocolId) : void {
-		val protocol = this.factory.newProtocolAsParticipant(this.owner, id)
+		val uid = UUID::randomUUID
+		val protocol = this.factory.newProtocolAsParticipant(this.owner, id, uid)
 		if (id == AclProtocolId::NONE) {
-			protocol.assertNull			
+			protocol.assertNull
 		} else {
 			protocol.assertNotNull
 			id.assertSame(protocol.aclProtocolId)
+			uid.assertEquals(protocol.conversationId)
 			protocol.isParticipantSide.assertTrue
 		}
 	}

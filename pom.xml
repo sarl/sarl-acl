@@ -31,6 +31,11 @@
 			<version>16.0</version>
 		</dependency>
 		<dependency>
+			<groupId>org.arakhne.afc.core</groupId>
+			<artifactId>util</artifactId>
+			<version>16.0</version>
+		</dependency>
+		<dependency>
 			<groupId>io.sarl</groupId>
 			<artifactId>io.sarl.sre.test.framework</artifactId>
 			<version>${sarl.version}</version>
@@ -89,12 +94,12 @@
 			<id>ngaud</id>
 			<name>Nicolas Gaud</name>
 			<email>nicolas.gaud@utbm.fr</email>
-			<url>http://www.multiagent.fr/People:Gaud_nicolas</url>
+			<url>http://www.ciad-lab.fr/author-10834/</url>
 			<organization>
 				Universit&amp;eacute; de Bourgogne Franche-Comt&amp;eacute;.
 				Universit&amp;eacute; de Technologie de Belfort-Montb&amp;eacute;liard.
 			</organization>
-			<organizationUrl>http://www.multiagent.fr</organizationUrl>
+			<organizationUrl>http://www.ciad-lab.fr</organizationUrl>
 			<roles>
 				<role>Co-founder</role>
 				<role>Architect</role>
@@ -105,12 +110,12 @@
 			<id>sgalland</id>
 			<name>St&amp;eacute;phane Galland</name>
 			<email>stephane.galland@utbm.fr</email>
-			<url>http://www.multiagent.fr/People:Galland_stephane</url>
+			<url>http://www.ciad-lab.fr/author-10836/</url>
 			<organization>
 				Universit&amp;eacute; de Bourgogne Franche-Comt&amp;eacute;.
 				Universit&amp;eacute; de Technologie de Belfort-Montb&amp;eacute;liard.
 			</organization>
-			<organizationUrl>http://www.multiagent.fr</organizationUrl>
+			<organizationUrl>http://www.ciad-lab.fr</organizationUrl>
 			<roles>
 				<role>Co-founder</role>
 				<role>Architect</role>

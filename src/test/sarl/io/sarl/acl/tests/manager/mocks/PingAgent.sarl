@@ -59,6 +59,10 @@ agent PingAgent {
 
 	on AgentSpawned [occurrence.agentID == this.participant] {
 		this.conversation = createConversationAsInitiator(AclProtocolId::SARL_PINGPONG)
+		val ex = getLastError
+		if (ex !== null) {
+			throw ex
+		}
 		this.conversation.timeoutEnable = false
 		this.conversation.ping(this.participant, "xyz")
 	}

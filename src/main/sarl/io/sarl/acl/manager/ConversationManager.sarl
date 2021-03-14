@@ -170,7 +170,6 @@ capacity ConversationManager {
 	/** Remove a listener on protocol's change. */
 	def removeProtocolChangeListener(listener : AclProtocolChangeListener)
 
-
 	/** Add a listener on conversation changes. */
 	def addConversationListener(listener : ConversationListener)
 
@@ -197,5 +196,8 @@ capacity ConversationManager {
 	 * @return {@code true} if events are fired into the agent inner context.
 	 */
 	def getEventFiringInAgentContext : boolean
+
+	/** Replies the last encountered error into the manager. */
+	def getLastError : Throwable
 
 }

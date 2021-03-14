@@ -34,8 +34,8 @@ import io.sarl.acl.protocol.ProtocolState
 import io.sarl.acl.util.InjectorUtil
 import io.sarl.core.Behaviors
 import io.sarl.lang.core.Behavior
-import io.sarl.util.ConcurrentCollection
-import io.sarl.util.ConcurrentCollectionLinkedDeque
+import io.sarl.lang.util.ConcurrentCollection
+import io.sarl.lang.util.ConcurrentCollectionFactory
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.TreeMap
@@ -43,6 +43,8 @@ import java.util.UUID
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.inject.Inject
+import javax.inject.Provider
+import org.eclipse.xtend.lib.annotations.Accessors
 
 /** 
  * Conversation Manager for ACL protocols.
@@ -83,6 +85,18 @@ skill StandardConversationManager implements ConversationManager {
 	var autoRemoveParticipantProtocols : boolean = true
 
 	var fireEventsIntoAgent : boolean = true
+
+	var collectionFactory : ConcurrentCollectionFactory
+
+	/** Replies the last encountered error. */
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
+	var lastError : Throwable
+
+	@Inject
+	@SuppressWarnings("potential_field_synchronization_problem")
+	def setCollectionFactory(collectionFactory : Provider<ConcurrentCollectionFactory>) {
+		this.collectionFactory = collectionFactory.get
+	}
 
 	@SuppressWarnings("potential_field_synchronization_problem")
 	override install {
@@ -135,7 +149,7 @@ skill StandardConversationManager implements ConversationManager {
 		wlock.lock
 		try {
 			if (this.timeoutListeners === null) {
-				this.timeoutListeners = new ConcurrentCollectionLinkedDeque
+				this.timeoutListeners = this.collectionFactory.newCollection
 			}
 			this.timeoutListeners += listener
 		} finally {
@@ -183,7 +197,7 @@ skill StandardConversationManager implements ConversationManager {
 		wlock.lock
 		try {
 			if (this.endListeners === null) {
-				this.endListeners = new ConcurrentCollectionLinkedDeque
+				this.endListeners = this.collectionFactory.newCollection
 			}
 			this.endListeners += listener
 		} finally {
@@ -231,7 +245,7 @@ skill StandardConversationManager implements ConversationManager {
 		wlock.lock
 		try {
 			if (this.changeListeners === null) {
-				this.changeListeners = new ConcurrentCollectionLinkedDeque
+				this.changeListeners = this.collectionFactory.newCollection
 			}
 			this.changeListeners += listener
 		} finally {
@@ -280,7 +294,7 @@ skill StandardConversationManager implements ConversationManager {
 		wlock.lock
 		try {
 			if (this.conversationListeners === null) {
-				this.conversationListeners = new ConcurrentCollectionLinkedDeque
+				this.conversationListeners = this.collectionFactory.newCollection
 			}
 			this.conversationListeners += listener
 		} finally {
@@ -466,7 +480,7 @@ skill StandardConversationManager implements ConversationManager {
 					return expectedType.cast(protocol)
 				}
 			} catch (ex : Throwable) {
-				//ex.printStackTrace
+				setLastError(ex)
 			}
 		}
 		return null
@@ -478,7 +492,7 @@ skill StandardConversationManager implements ConversationManager {
 				val type = AclProtocolId::valueOfCaseInsensitive(protocolType)
 				return createConversationAsParticipant(type, conversationId, expectedType, name)
 			} catch (ex : Throwable) {
-				//
+				setLastError(ex)
 			}
 		}
 		return null
@@ -497,7 +511,7 @@ skill StandardConversationManager implements ConversationManager {
 					return expectedType.cast(protocol)
 				}
 			} catch (ex : Throwable) {
-				//
+				setLastError(ex)
 			}
 		}
 		return null
@@ -508,7 +522,7 @@ skill StandardConversationManager implements ConversationManager {
 			val type = AclProtocolId::valueOfCaseInsensitive(protocolType)
 			return createConversationAsInitiator(type, expectedType, name)
 		} catch (ex : Throwable) {
-			//
+			setLastError(ex)
 		}
 		return null
 	}

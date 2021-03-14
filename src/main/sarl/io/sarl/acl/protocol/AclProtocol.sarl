@@ -30,8 +30,7 @@ import io.sarl.core.Logging
 import io.sarl.core.Schedules
 import io.sarl.core.Time
 import io.sarl.lang.core.Agent
-import io.sarl.util.ConcurrentCollection
-import io.sarl.util.ConcurrentCollectionLinkedDeque
+import io.sarl.util.SmartListenerCollection
 import java.lang.ref.WeakReference
 import java.nio.charset.Charset
 import java.text.MessageFormat
@@ -40,8 +39,11 @@ import java.util.Map
 import java.util.Objects
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import javax.inject.Inject
+import javax.inject.Provider
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtext.xbase.lib.util.ToStringBuilder
+import io.sarl.acl.boot.configs.AclConfig
 
 /** 
  * This abstract class describes all the necessary information common to every ACL protocols.
@@ -53,6 +55,7 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder
  * @mavenartifactid $ArtifactId$
  * @since 0.12
  */
+@SuppressWarnings("raw_type")
 abstract behavior AclProtocol {
 
 	uses Logging, ACL, Time, Schedules
@@ -60,9 +63,19 @@ abstract behavior AclProtocol {
 	/** Lock for the behavior. */
 	protected val lock = new ReentrantReadWriteLock
 
-	var timeoutListeners : ConcurrentCollection<AclProtocolTimeoutListener>
+	var timeoutListeners : SmartListenerCollection<AclProtocolTimeoutListener>
+
+	var endListeners : SmartListenerCollection<AclProtocolFinishingListener>
 
 	var conversationManager : WeakReference<ConversationManager>
+
+	var factory : Provider<SmartListenerCollection>
+
+	@SuppressWarnings("potential_field_synchronization_problem")
+	@Inject
+	def setConcurrentCollectionFactory(factory : Provider<SmartListenerCollection>) {
+		this.factory = factory
+	}
 
 	/** Invoked when the protocol is installed into the conversation manager. */
 	@SuppressWarnings("potential_field_synchronization_problem")
@@ -95,9 +108,9 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (this.timeoutListeners === null) {
-				this.timeoutListeners = new ConcurrentCollectionLinkedDeque
+				this.timeoutListeners = this.factory.get
 			}
-			this.timeoutListeners += listener
+			this.timeoutListeners.add(typeof(AclProtocolTimeoutListener), listener)
 		} finally {
 			wlock.unlock
 		}
@@ -125,7 +138,7 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (this.timeoutListeners !== null) {
-				this.timeoutListeners.remove(listener)
+				this.timeoutListeners.remove(typeof(AclProtocolTimeoutListener), listener)
 				if (this.timeoutListeners.empty) {
 					this.timeoutListeners = null
 				}
@@ -140,15 +153,13 @@ abstract behavior AclProtocol {
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
 	protected def notifyTimeout : void {
-		if (this.timeoutListeners !== null) {
-			val list = <AclProtocolTimeoutListener>newArrayList(this.timeoutListeners)
-			for (listener : list) {
-				listener.timeoutReached(this)
-			}
+		val list = this.timeoutListeners
+		if (list !== null) {
+			list.notifyListeners(typeof(AclProtocolTimeoutListener)) [
+				it.timeoutReached(this)
+			]
 		}
 	}
-
-	var endListeners : ConcurrentCollection<AclProtocolFinishingListener>
 
 	/** Add a listener on protocol's finishing. */
 	@SuppressWarnings("potential_field_synchronization_problem")
@@ -157,9 +168,9 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (this.endListeners === null) {
-				this.endListeners = new ConcurrentCollectionLinkedDeque
+				this.endListeners = this.factory.get
 			}
-			this.endListeners += listener
+			this.endListeners.add(typeof(AclProtocolFinishingListener), listener)
 		} finally {
 			wlock.unlock
 		}
@@ -172,7 +183,7 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (this.endListeners !== null) {
-				this.endListeners.remove(listener)
+				this.endListeners.remove(typeof(AclProtocolFinishingListener), listener)
 				if (this.endListeners.empty) {
 					this.endListeners = null
 				}
@@ -187,15 +198,15 @@ abstract behavior AclProtocol {
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
 	protected def notifyFinished(^event : AbstractAclProtocolEvent) : void {
-		if (this.endListeners !== null) {
-			val list = <AclProtocolFinishingListener>newArrayList(this.endListeners)
-			for (listener : list) {
-				listener.protocolFinished(this, ^event)
-			}
+		val list = this.endListeners
+		if (list !== null) {
+			list.notifyListeners(typeof(AclProtocolFinishingListener)) [
+				it.protocolFinished(this, ^event)
+			]
 		}
 	}
 
-	var changeListeners : ConcurrentCollection<AclProtocolChangeListener>
+	var changeListeners : SmartListenerCollection<AclProtocolChangeListener>
 
 	/** Add a listener on protocol's changes. */
 	@SuppressWarnings("potential_field_synchronization_problem")
@@ -204,9 +215,9 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (this.changeListeners === null) {
-				this.changeListeners = new ConcurrentCollectionLinkedDeque
+				this.changeListeners = this.factory.get
 			}
-			this.changeListeners += listener
+			this.changeListeners.add(typeof(AclProtocolChangeListener), listener)
 		} finally {
 			wlock.unlock
 		}
@@ -219,7 +230,7 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (this.changeListeners !== null) {
-				this.changeListeners.remove(listener)
+				this.changeListeners.remove(typeof(AclProtocolChangeListener), listener)
 				if (this.changeListeners.empty) {
 					this.changeListeners = null
 				}
@@ -234,11 +245,11 @@ abstract behavior AclProtocol {
 	 */
 	@SuppressWarnings("potential_field_synchronization_problem")
 	protected def notifyChange(^event : AbstractAclProtocolEvent) : void {
-		if (this.changeListeners !== null) {
-			val list = <AclProtocolChangeListener>newArrayList(this.changeListeners)
-			for (listener : list) {
-				listener.protocolChanged(this, ^event)
-			}
+		val list = this.changeListeners
+		if (list !== null) {
+			list.notifyListeners(typeof(AclProtocolChangeListener)) [
+				it.protocolChanged(this, ^event)
+			]
 		}
 	}
 
@@ -386,7 +397,7 @@ abstract behavior AclProtocol {
 	/**
 	 * General timeout for the protocol.
 	 */
-	protected var timeout : double = ProtocolConstants::DEFAULT_TIMEOUT
+	protected var timeout : double = AclConfig::DEFAULT_TIMEOUT_VALUE
 
 	/** Constructor.
 	 *
@@ -434,7 +445,7 @@ abstract behavior AclProtocol {
 		wlock.lock
 		try {
 			if (timeout <= 0.0) {
-				this.timeout = ProtocolConstants::DEFAULT_TIMEOUT
+				this.timeout = AclConfig::DEFAULT_TIMEOUT_VALUE
 			} else {
 				this.timeout = timeout
 			}

@@ -33,6 +33,8 @@ import io.sarl.acl.protocol.query.ParticipantFipaQueryProtocol
 import io.sarl.acl.protocol.query.InitiatorFipaQueryProtocol
 import io.sarl.acl.protocol.requestwhen.ParticipantFipaRequestWhenProtocol
 import io.sarl.acl.protocol.requestwhen.InitiatorFipaRequestWhenProtocol
+import com.google.inject.Injector
+import javax.inject.Inject
 
 /** 
  * Factory of a ACL protocol.
@@ -45,56 +47,73 @@ import io.sarl.acl.protocol.requestwhen.InitiatorFipaRequestWhenProtocol
  */
 class DefaultAclProtocolFactory implements AclProtocolFactory {
 
+	var injector : Injector
+	
+	@Inject
+	def setInjector(injector : Injector) {
+		this.injector = injector
+	}
+
 	override newProtocolAsParticipant(owner : Agent, protocolType : AclProtocolId, conversationId : UUID) : AclProtocol {
+		var prot : AclProtocol
 		switch (protocolType) {
 			case NONE: {
 				return null
 			}
 			case SARL_PINGPONG: {
-				return new ParticipantSarlPingPongProtocol(owner) => [ it.conversationId = conversationId ]
+				prot = new ParticipantSarlPingPongProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			case FIPA_PROPOSE: {
-				return new ParticipantFipaProposeProtocol(owner) => [ it.conversationId = conversationId ]
+				prot = new ParticipantFipaProposeProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			case FIPA_REQUEST: {
-				return new ParticipantFipaRequestProtocol(owner) => [ it.conversationId = conversationId ]
+				prot = new ParticipantFipaRequestProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			case FIPA_QUERY: {
-				return new ParticipantFipaQueryProtocol(owner) => [ it.conversationId = conversationId ]
+				prot = new ParticipantFipaQueryProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			case FIPA_REQUEST_WHEN: {
-				return new ParticipantFipaRequestWhenProtocol(owner) => [ it.conversationId = conversationId ]
+				prot = new ParticipantFipaRequestWhenProtocol(owner) => [ it.conversationId = conversationId ]
 			}
 			default: {
 				throw new IllegalArgumentException
 			}
-		}		
+		}
+		if (this.injector !== null) {
+			this.injector.injectMembers(prot)
+		}
+		return prot
 	}
 
 	override newProtocolAsInitiator(owner : Agent, protocolType : AclProtocolId) : AclProtocol {
+		var prot : AclProtocol
 		switch (protocolType) {
 			case NONE: {
 				return null
 			}
 			case SARL_PINGPONG: {
-				return new InitiatorSarlPingPongProtocol(owner)
+				prot = new InitiatorSarlPingPongProtocol(owner)
 			}
 			case FIPA_PROPOSE: {
-				return new InitiatorFipaProposeProtocol(owner)
+				prot = new InitiatorFipaProposeProtocol(owner)
 			}
 			case FIPA_REQUEST: {
-				return new InitiatorFipaRequestProtocol(owner)
+				prot = new InitiatorFipaRequestProtocol(owner)
 			}
 			case FIPA_QUERY: {
-				return new InitiatorFipaQueryProtocol(owner)
+				prot = new InitiatorFipaQueryProtocol(owner)
 			}
 			case FIPA_REQUEST_WHEN: {
-				return new InitiatorFipaRequestWhenProtocol(owner)
+				prot = new InitiatorFipaRequestWhenProtocol(owner)
 			}
 			default: {
 				throw new IllegalArgumentException
 			}
 		}		
+		if (this.injector !== null) {
+			this.injector.injectMembers(prot)
+		}
+		return prot
 	}
 
 }

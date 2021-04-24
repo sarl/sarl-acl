@@ -69,7 +69,7 @@ class AclConfig {
 	 * @param timeout the default timeout in seconds. 
 	 */
 	@BQConfigProperty("Time out for ACL protocols in seconds.")
-	def setTieout(timeout : double) {
+	def setTimeout(timeout : double) {
 		this.timeout = timeout
 	}
 

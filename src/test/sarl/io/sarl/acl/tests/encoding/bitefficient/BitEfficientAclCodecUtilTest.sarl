@@ -31,9 +31,9 @@ import io.sarl.acl.encoding.bitefficient.constant.PredefinedMessageType
 import io.sarl.acl.message.Performative
 import io.sarl.acl.util.ByteArrayBuffer
 import io.sarl.acl.util.Iso8601DateTimeUtil
+import io.sarl.lang.tests.api.extensions.JavaVersionCheckExtension
 import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
 import java.util.Calendar
 import java.util.TimeZone
 import java.util.UUID

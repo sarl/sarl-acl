@@ -19,14 +19,19 @@
  * limitations under the License.
  */
 
-package io.sarl.acl.tests.manager.mocks
+package io.sarl.acl.itests.manager.mocks
 
+import io.sarl.acl.manager.ConversationManager
 import io.sarl.acl.manager.StandardConversationManager
-import io.sarl.acl.protocol.pingpong.ParticipantSarlPingPongProtocol
-import io.sarl.acl.protocol.pingpong.PingReceived
-import io.sarl.core.Initialize
+import io.sarl.acl.protocol.AclProtocolId
+import io.sarl.acl.protocol.pingpong.InitiatorSarlPingPongProtocol
+import io.sarl.acl.protocol.pingpong.PongReceived
+import io.sarl.api.core.AgentSpawned
+import io.sarl.api.core.Initialize
+import io.sarl.api.core.Lifecycle
 import io.sarl.sre.test.framework.skills.TestingCapacity
 import io.sarl.sre.test.framework.skills.TestingSkill
+import java.util.UUID
 
 /**
  * @author $Author: sgalland$
@@ -35,20 +40,35 @@ import io.sarl.sre.test.framework.skills.TestingSkill
  * @mavenartifactid $ArtifactId$
  */
 @SuppressWarnings("potential_field_synchronization_problem")
-agent PongAgent {
+agent PingAgent {
 
+	uses Lifecycle
 	uses TestingCapacity
+	uses ConversationManager
+
+	var participant : UUID
+
+	var conversation : InitiatorSarlPingPongProtocol
 
 	on Initialize {
 		setSkill(new TestingSkill(occurrence))		
-		setSkill(new StandardConversationManager)		
+		setSkill(new StandardConversationManager)
+		this.participant = UUID::randomUUID
+		typeof(PongAgent).spawnWithID(this.participant, buildAgentInitializationParameters)
 	}
 
-	@SuppressWarnings("discouraged_occurrence_readonly_use")
-	on PingReceived {
-		val conv = occurrence.protocol.to(typeof(ParticipantSarlPingPongProtocol))
-		conv.timeoutEnable = false
-		conv.pong("abc")
+	on AgentSpawned [occurrence.agentID == this.participant] {
+		this.conversation = createConversationAsInitiator(AclProtocolId::SARL_PINGPONG)
+		val ex = getLastError
+		if (ex !== null) {
+			throw ex
+		}
+		this.conversation.timeoutEnable = false
+		this.conversation.ping(this.participant, "xyz")
+	}
+
+	on PongReceived {
+		addResult("PONG-RECEIVED")
 		killMeSoon
 	}
 

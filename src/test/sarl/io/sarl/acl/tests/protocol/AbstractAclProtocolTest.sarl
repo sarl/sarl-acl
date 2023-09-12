@@ -26,21 +26,13 @@ import io.sarl.acl.message.Performative
 import io.sarl.acl.protocol.AclProtocol
 import io.sarl.acl.protocol.ProtocolResult
 import io.sarl.acl.routing.ACL
-import io.sarl.core.AgentTask
-import io.sarl.core.Logging
-import io.sarl.core.Schedules
-import io.sarl.core.Time
-import io.sarl.lang.annotation.PrivateAPI
 import io.sarl.lang.core.Agent
 import io.sarl.lang.core.IBehaviorGuardEvaluatorReceiver
 import io.sarl.lang.core.SREutils
 import io.sarl.lang.core.Skill
-import io.sarl.lang.util.ConcurrentCollection
-import io.sarl.lang.util.ConcurrentSet
-import io.sarl.lang.util.DefaultConcurrentCollectionFactory
 import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
+import io.sarl.lang.tests.api.extensions.JavaVersionCheckExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -56,6 +48,14 @@ import org.junit.jupiter.api.^extension.ExtendWith
 import static extension io.sarl.lang.core.SREutils.*
 import static extension org.junit.jupiter.api.Assertions.*
 import static extension org.mockito.Mockito.*
+import io.sarl.lang.core.util.ConcurrentCollection
+import io.sarl.lang.core.util.DefaultConcurrentCollectionFactory
+import io.sarl.lang.core.annotation.PrivateAPI
+import io.sarl.api.core.Time
+import io.sarl.api.core.Schedules
+import io.sarl.api.core.Logging
+import io.sarl.api.core.AgentTask
+import io.sarl.lang.core.util.ConcurrentSet
 
 @ExtendWith(#[
 	typeof(ContextInitExtension),

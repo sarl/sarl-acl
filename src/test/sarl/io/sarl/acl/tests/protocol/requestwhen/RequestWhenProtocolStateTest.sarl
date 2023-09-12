@@ -23,7 +23,6 @@ package io.sarl.acl.tests.protocol.requestwhen
 
 import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Tag
@@ -34,6 +33,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import static extension org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import io.sarl.acl.protocol.requestwhen.RequestWhenProtocolState
+import io.sarl.lang.tests.api.extensions.JavaVersionCheckExtension
 
 @ExtendWith(#[
 	typeof(ContextInitExtension),

@@ -26,9 +26,9 @@ import io.sarl.acl.encoding.json.JsonEnvelopeCodec
 import io.sarl.acl.message.AclMessageEnvelope
 import io.sarl.acl.message.AclRepresentation
 import io.sarl.acl.message.StandardAclEnvelope
+import io.sarl.lang.tests.api.extensions.JavaVersionCheckExtension
 import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
 import java.util.Collection
 import java.util.Collections
 import java.util.Date
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
 
-import static extension io.sarl.tests.api.tools.TestAssertions.*
 import static extension org.junit.jupiter.api.Assertions.*
 
 @ExtendWith(#[

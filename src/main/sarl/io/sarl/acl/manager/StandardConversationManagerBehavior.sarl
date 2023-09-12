@@ -24,10 +24,10 @@ package io.sarl.acl.manager
 import io.sarl.acl.message.AclMessage
 import io.sarl.acl.message.UnhandledAclMessage
 import io.sarl.acl.protocol.AclProtocol
-import io.sarl.core.Behaviors
 import io.sarl.lang.core.Agent
 import java.lang.ref.WeakReference
 import java.util.UUID
+import io.sarl.api.core.Behaviors
 
 /** 
  * Dynamic behavior of a conversation Manager for ACL protocols.

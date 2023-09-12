@@ -21,11 +21,6 @@
 
 package io.sarl.acl.boot.configs
 
-import com.google.inject.AbstractModule
-import com.google.inject.Injector
-import com.google.inject.Module
-import com.google.inject.Provides
-import io.bootique.BQModule
 import io.bootique.BQModuleProvider
 import io.bootique.annotation.BQConfig
 import io.bootique.annotation.BQConfigProperty
@@ -37,6 +32,11 @@ import javax.inject.Singleton
 import org.eclipse.xtend.lib.annotations.Accessors
 
 import static io.sarl.acl.boot.configs.AclConfig.*
+import io.bootique.di.BQModule
+import io.bootique.di.Provides
+import io.bootique.di.Injector
+import io.bootique.di.Binder
+import io.bootique.BQModuleMetadata
 
 /** 
  * Configuration for the ACL features. 
@@ -95,9 +95,9 @@ class AclConfig {
  * @mavenartifactid $ArtifactId$
  * @since 0.12
  */
-class AclConfigModule extends AbstractModule {
+class AclConfigModule implements BQModule {
 
-	override configure : void {
+	override configure(binder : Binder) : void {
 		//
 	}
 
@@ -127,7 +127,7 @@ class AclConfigModule extends AbstractModule {
  */
 class AclConfigModuleProvider implements BQModuleProvider {
 
-	override module : Module {
+	override module : BQModule {
 		return new AclConfigModule
 	}
 
@@ -135,9 +135,10 @@ class AclConfigModuleProvider implements BQModuleProvider {
 		return Collections::singletonMap(PREFIX, typeof(AclConfig))
 	}
 
-	override moduleBuilder : BQModule.Builder {
-		return BQModule::builder(module).overrides(overrides).providerName(name).configs(configs).description(
-			Messages::AclConfigModuleProvider_0);
+	override moduleBuilder : BQModuleMetadata.Builder {
+		return BQModuleMetadata::builder(module).overrides(overrides)
+			.providerName(name).configs(configs)
+			.description(Messages::AclConfigModuleProvider_0);
 	}
 
 }

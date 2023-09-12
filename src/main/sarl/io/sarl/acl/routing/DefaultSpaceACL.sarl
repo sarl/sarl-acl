@@ -22,8 +22,8 @@
 package io.sarl.acl.routing
 
 import io.sarl.acl.message.AclMessage
-import io.sarl.core.DefaultContextInteractions
 import java.util.UUID
+import io.sarl.api.core.DefaultContextInteractions
 
 /** 
  * Skill to emit ACL messages in the default space.

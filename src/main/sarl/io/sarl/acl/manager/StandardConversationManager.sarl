@@ -32,10 +32,7 @@ import io.sarl.acl.protocol.AclProtocolTimeoutListener
 import io.sarl.acl.protocol.DefaultAclProtocolFactory
 import io.sarl.acl.protocol.ProtocolState
 import io.sarl.acl.util.InjectorUtil
-import io.sarl.core.Behaviors
 import io.sarl.lang.core.Behavior
-import io.sarl.lang.util.ConcurrentCollection
-import io.sarl.lang.util.ConcurrentCollectionFactory
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.TreeMap
@@ -45,6 +42,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.inject.Inject
 import javax.inject.Provider
 import org.eclipse.xtend.lib.annotations.Accessors
+import io.sarl.lang.core.util.ConcurrentCollection
+import io.sarl.lang.core.util.ConcurrentCollectionFactory
+import io.sarl.api.core.Behaviors
 
 /** 
  * Conversation Manager for ACL protocols.

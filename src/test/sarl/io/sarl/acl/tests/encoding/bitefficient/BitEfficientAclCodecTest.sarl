@@ -35,9 +35,9 @@ import io.sarl.acl.message.AclMessage
 import io.sarl.acl.message.AclRepresentation
 import io.sarl.acl.message.Performative
 import io.sarl.acl.util.Iso8601DateTimeUtil
+import io.sarl.lang.tests.api.extensions.JavaVersionCheckExtension
 import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
 import java.nio.ByteBuffer
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach

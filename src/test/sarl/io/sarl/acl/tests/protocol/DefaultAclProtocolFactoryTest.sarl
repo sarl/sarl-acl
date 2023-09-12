@@ -23,16 +23,12 @@ package io.sarl.acl.tests.protocol
 
 import io.sarl.acl.protocol.AclProtocolId
 import io.sarl.acl.protocol.DefaultAclProtocolFactory
-import io.sarl.core.AgentTask
-import io.sarl.core.Schedules
-import io.sarl.lang.annotation.PrivateAPI
 import io.sarl.lang.core.Agent
 import io.sarl.lang.core.SREutils
 import io.sarl.lang.core.Skill
-import io.sarl.lang.util.ConcurrentSet
 import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
+import io.sarl.lang.tests.api.extensions.JavaVersionCheckExtension
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -43,6 +39,10 @@ import org.junit.jupiter.params.provider.EnumSource
 
 import static extension org.junit.jupiter.api.Assertions.*
 import static extension org.mockito.Mockito.*
+import io.sarl.api.core.Schedules
+import io.sarl.api.core.AgentTask
+import io.sarl.lang.core.util.ConcurrentSet
+import io.sarl.lang.core.annotation.PrivateAPI
 
 @ExtendWith(#[
 	typeof(ContextInitExtension),

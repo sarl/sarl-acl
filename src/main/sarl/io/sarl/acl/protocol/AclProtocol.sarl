@@ -25,12 +25,7 @@ import io.sarl.acl.manager.ConversationManager
 import io.sarl.acl.message.AclMessage
 import io.sarl.acl.message.Performative
 import io.sarl.acl.routing.ACL
-import io.sarl.core.AgentTask
-import io.sarl.core.Logging
-import io.sarl.core.Schedules
-import io.sarl.core.Time
 import io.sarl.lang.core.Agent
-import io.sarl.util.SmartListenerCollection
 import java.lang.ref.WeakReference
 import java.nio.charset.Charset
 import java.text.MessageFormat
@@ -44,6 +39,11 @@ import javax.inject.Provider
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtext.xbase.lib.util.ToStringBuilder
 import io.sarl.acl.boot.configs.AclConfig
+import io.sarl.api.core.Logging
+import io.sarl.api.core.Time
+import io.sarl.api.core.Schedules
+import io.sarl.api.util.SmartListenerCollection
+import io.sarl.api.core.AgentTask
 
 /** 
  * This abstract class describes all the necessary information common to every ACL protocols.

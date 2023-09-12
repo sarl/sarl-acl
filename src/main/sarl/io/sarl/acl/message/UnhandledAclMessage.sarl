@@ -21,7 +21,7 @@
 
 package io.sarl.acl.message
 
-import io.sarl.core.Failure
+import io.sarl.api.core.Failure
 
 /** 
  * This event is fired when an ACL message cannot be handled by the conversation manager.
